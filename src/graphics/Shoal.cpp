@@ -1,5 +1,5 @@
 #pragma once
-#include "Shoal.hpp"
+#include "graphics/Shoal.hpp"
 #include "Config.hpp"
 #include <iostream>
 #include <vector>

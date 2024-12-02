@@ -1,12 +1,16 @@
 #pragma once
-#include "animation.hpp"
+#include "graphics/Animation.hpp"
 #include <iostream>
 #include <vector>
 #include <chrono>
 
 namespace graphics 
 {
-    Animation::Animation(GLFWwindow* window, float* shoalData) : _shoalData(shoalData), _window(window) { }
+    Animation::Animation(GLFWwindow* window, float* shoalData) : _shoalData(shoalData), _window(window) 
+    { 
+        int x = 1; 
+        x++;
+    }
 
     Animation::~Animation() {
 

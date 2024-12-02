@@ -1,6 +1,6 @@
-
-#include "aquarium.hpp"
+#include "Aquarium.hpp"
 #include "Shoal.hpp"
+
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
 

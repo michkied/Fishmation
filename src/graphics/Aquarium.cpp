@@ -1,5 +1,5 @@
 #pragma once
-#include "aquarium.hpp"
+#include "graphics/Aquarium.hpp"
 #include <iostream>
 #include <vector>
 #include <chrono>
