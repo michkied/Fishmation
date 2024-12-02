@@ -100,6 +100,7 @@
   <ItemGroup>
     <ClInclude Include="animation.hpp" />
     <ClInclude Include="aquarium.hpp" />
+    <ClInclude Include="Config.hpp" />
     <ClInclude Include="Shoal.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

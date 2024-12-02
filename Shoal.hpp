@@ -10,7 +10,7 @@ namespace graphics
 	class Shoal
 	{
 	public:
-		Shoal(glm::mat4 view, glm::mat4 proj);
+		Shoal(glm::mat4 view, glm::mat4 proj, float* shoalData);
 		~Shoal();
 
 		void Draw(float time);
@@ -21,7 +21,8 @@ namespace graphics
 		void CompileGeometryShader();
 		void CompileFragmentShader();
 
-		GLFWwindow* _window;
+		float* _shoalData;
+
 		GLuint _shaderProgram;
 		GLuint _vao;
 		GLuint _vbo;

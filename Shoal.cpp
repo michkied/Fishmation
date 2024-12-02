@@ -1,5 +1,6 @@
 #pragma once
 #include "Shoal.hpp"
+#include "Config.hpp"
 #include <iostream>
 #include <vector>
 #include <chrono>
@@ -7,34 +8,14 @@
 namespace graphics
 {
 
-    Shoal::Shoal(glm::mat4 view, glm::mat4 proj) {
+    Shoal::Shoal(glm::mat4 view, glm::mat4 proj, float* shoalData) : _shoalData(shoalData) {
         glEnable(GL_PROGRAM_POINT_SIZE);
         glGenVertexArrays(1, &_vao);
         glBindVertexArray(_vao);
 
-        GLfloat vertices[] = {
-            // Bottom face edges
-            -0.5f,  0.5f, -0.5f,  0.5f,  0.5f, -0.5f, // Top-left to Top-right
-             0.5f,  0.5f, -0.5f,  0.5f, -0.5f, -0.5f, // Top-right to Bottom-right
-             0.5f, -0.5f, -0.5f, -0.5f, -0.5f, -0.5f, // Bottom-right to Bottom-left
-            -0.5f, -0.5f, -0.5f, -0.5f,  0.5f, -0.5f, // Bottom-left to Top-left
-
-            // Top face edges
-            -0.5f,  0.5f,  0.5f,  0.5f,  0.5f,  0.5f, // Top-left to Top-right
-             0.5f,  0.5f,  0.5f,  0.5f, -0.5f,  0.5f, // Top-right to Bottom-right
-             0.5f, -0.5f,  0.5f, -0.5f, -0.5f,  0.5f, // Bottom-right to Bottom-left
-            -0.5f, -0.5f,  0.5f, -0.5f,  0.5f,  0.5f, // Bottom-left to Top-left
-
-            // Vertical edges
-            -0.5f,  0.5f, -0.5f, -0.5f,  0.5f,  0.5f, // Bottom Top-left to Top Top-left
-             0.5f,  0.5f, -0.5f,  0.5f,  0.5f,  0.5f, // Bottom Top-right to Top Top-right
-             0.5f, -0.5f, -0.5f,  0.5f, -0.5f,  0.5f, // Bottom Bottom-right to Top Bottom-right
-            -0.5f, -0.5f, -0.5f, -0.5f, -0.5f,  0.5f  // Bottom Bottom-left to Top Bottom-left
-        };
-
         glGenBuffers(1, &_vbo);
         glBindBuffer(GL_ARRAY_BUFFER, _vbo);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(float) * Config::SHOAL_SIZE * 3, shoalData, GL_DYNAMIC_DRAW);
 
         CompileShaders();
 
@@ -57,6 +38,7 @@ namespace graphics
     Shoal::~Shoal() {
         glDeleteProgram(_shaderProgram);
         glDeleteShader(_fragmentShader);
+        glDeleteShader(_geometryShader);
         glDeleteShader(_vertexShader);
 
         glDeleteBuffers(1, &_vbo);
@@ -183,6 +165,9 @@ namespace graphics
     {
         glBindVertexArray(_vao);
         glUseProgram(_shaderProgram);
+
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * Config::SHOAL_SIZE * 3, _shoalData);
+
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::rotate(
             model,
@@ -192,6 +177,6 @@ namespace graphics
 
         glUniformMatrix4fv(_uniModel, 1, GL_FALSE, glm::value_ptr(model));
 
-        glDrawArrays(GL_POINTS, 0, 24);
+        glDrawArrays(GL_POINTS, 0, Config::SHOAL_SIZE);
     }
 }

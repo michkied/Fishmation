@@ -13,13 +13,14 @@ namespace graphics
 	class Animation
 	{
 	public:
-		Animation(GLFWwindow* window);
+		Animation(GLFWwindow* window, float* shoalData);
 		~Animation();
 
 		void Start();
 
 	private:
 		GLFWwindow* _window;
+		float* _shoalData;
 
 		glm::mat4 view = glm::lookAt(
 			glm::vec3(3.0f, 0.0f, 0.5f),
@@ -29,7 +30,7 @@ namespace graphics
 		glm::mat4 proj = glm::perspective(glm::radians(70.0f), 1920.0f / 1080.0f, 1.0f, 10.0f);
 
 		Aquarium _aquarium = Aquarium(view, proj);
-		Shoal _shoal = Shoal(view, proj);
+		Shoal _shoal = Shoal(view, proj, _shoalData);
 
 	};
 }

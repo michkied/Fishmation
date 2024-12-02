@@ -7,8 +7,7 @@
 #include "GLFW/glfw3.h"
 
 #include "animation.hpp"
-
-#define N 100
+#include "Config.hpp"
 
 struct FishProperties 
 {
@@ -21,13 +20,13 @@ struct FishProperties
 
 struct FishShoal 
 {
-    double positionX[N];
-    double positionY[N];
-    double positionZ[N];
+    double positionX[Config::SHOAL_SIZE];
+    double positionY[Config::SHOAL_SIZE];
+    double positionZ[Config::SHOAL_SIZE];
 
-    double velocityX[N];
-    double velocityY[N];
-    double velocityZ[N];
+    double velocityX[Config::SHOAL_SIZE];
+    double velocityY[Config::SHOAL_SIZE];
+    double velocityZ[Config::SHOAL_SIZE];
 };
 
 cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size);
@@ -47,14 +46,25 @@ int main()
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_SAMPLES, 4);
-    GLFWwindow* window = glfwCreateWindow(1920, 1080, "GLFW OpenGL", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(Config::WIDTH, Config::HEIGHT, "GLFW OpenGL", NULL, NULL);
     glfwMakeContextCurrent(window);
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_MULTISAMPLE);
 
-    graphics::Animation animation = graphics::Animation(window);
+    float shoal[Config::SHOAL_SIZE * 3] = {
+            -0.5f,  -0.5f, -0.5f,
+            -0.5f,  -0.5f,  0.5f,
+            -0.5f,  0.5f,  0.5f,
+            -0.5f,  0.5f, -0.5f,
+            0.5f,  -0.5f, -0.5f,
+            0.5f,  -0.5f,  0.5f,
+            0.5f,  0.5f,  0.5f,
+            0.5f,  0.5f, -0.5f,
+    };
+
+    graphics::Animation animation = graphics::Animation(window, shoal);
 
     //glfwSetKeyCallback(window, quit);
 
