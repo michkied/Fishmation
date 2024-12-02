@@ -1,5 +1,5 @@
 #pragma once
-#include "aquarium.hpp"
+#include "Shoal.hpp"
 #include <iostream>
 #include <vector>
 #include <chrono>
@@ -7,29 +7,29 @@
 namespace graphics
 {
 
-    Aquarium::Aquarium(glm::mat4 view, glm::mat4 proj) {
-
+    Shoal::Shoal(glm::mat4 view, glm::mat4 proj) {
+        glEnable(GL_PROGRAM_POINT_SIZE);
         glGenVertexArrays(1, &_vao);
         glBindVertexArray(_vao);
 
         GLfloat vertices[] = {
             // Bottom face edges
-            -1.0f,  1.0f, -1.0f,  1.0f,  1.0f, -1.0f, // Top-left to Top-right
-             1.0f,  1.0f, -1.0f,  1.0f, -1.0f, -1.0f, // Top-right to Bottom-right
-             1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, // Bottom-right to Bottom-left
-            -1.0f, -1.0f, -1.0f, -1.0f,  1.0f, -1.0f, // Bottom-left to Top-left
+            -0.5f,  0.5f, -0.5f,  0.5f,  0.5f, -0.5f, // Top-left to Top-right
+             0.5f,  0.5f, -0.5f,  0.5f, -0.5f, -0.5f, // Top-right to Bottom-right
+             0.5f, -0.5f, -0.5f, -0.5f, -0.5f, -0.5f, // Bottom-right to Bottom-left
+            -0.5f, -0.5f, -0.5f, -0.5f,  0.5f, -0.5f, // Bottom-left to Top-left
 
             // Top face edges
-            -1.0f,  1.0f,  1.0f,  1.0f,  1.0f,  1.0f, // Top-left to Top-right
-             1.0f,  1.0f,  1.0f,  1.0f, -1.0f,  1.0f, // Top-right to Bottom-right
-             1.0f, -1.0f,  1.0f, -1.0f, -1.0f,  1.0f, // Bottom-right to Bottom-left
-            -1.0f, -1.0f,  1.0f, -1.0f,  1.0f,  1.0f, // Bottom-left to Top-left
+            -0.5f,  0.5f,  0.5f,  0.5f,  0.5f,  0.5f, // Top-left to Top-right
+             0.5f,  0.5f,  0.5f,  0.5f, -0.5f,  0.5f, // Top-right to Bottom-right
+             0.5f, -0.5f,  0.5f, -0.5f, -0.5f,  0.5f, // Bottom-right to Bottom-left
+            -0.5f, -0.5f,  0.5f, -0.5f,  0.5f,  0.5f, // Bottom-left to Top-left
 
             // Vertical edges
-            -1.0f,  1.0f, -1.0f, -1.0f,  1.0f,  1.0f, // Bottom Top-left to Top Top-left
-             1.0f,  1.0f, -1.0f,  1.0f,  1.0f,  1.0f, // Bottom Top-right to Top Top-right
-             1.0f, -1.0f, -1.0f,  1.0f, -1.0f,  1.0f, // Bottom Bottom-right to Top Bottom-right
-            -1.0f, -1.0f, -1.0f, -1.0f, -1.0f,  1.0f  // Bottom Bottom-left to Top Bottom-left
+            -0.5f,  0.5f, -0.5f, -0.5f,  0.5f,  0.5f, // Bottom Top-left to Top Top-left
+             0.5f,  0.5f, -0.5f,  0.5f,  0.5f,  0.5f, // Bottom Top-right to Top Top-right
+             0.5f, -0.5f, -0.5f,  0.5f, -0.5f,  0.5f, // Bottom Bottom-right to Top Bottom-right
+            -0.5f, -0.5f, -0.5f, -0.5f, -0.5f,  0.5f  // Bottom Bottom-left to Top Bottom-left
         };
 
         glGenBuffers(1, &_vbo);
@@ -46,15 +46,15 @@ namespace graphics
 
         _uniModel = glGetUniformLocation(_shaderProgram, "model");
 
-        _uniColor = glGetUniformLocation(_shaderProgram, "triangleColor");
-        glUniform4f(_uniColor, 1.0f, 1.0f, 1.0f, 1.0f);
+        _uniColor = glGetUniformLocation(_shaderProgram, "color");
+        glUniform4f(_uniColor, 0.5f, 0.5f, 1.0f, 1.0f);
 
         GLint posAttrib = glGetAttribLocation(_shaderProgram, "position");
         glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 0, 0);
         glEnableVertexAttribArray(posAttrib);
     }
 
-    Aquarium::~Aquarium() {
+    Shoal::~Shoal() {
         glDeleteProgram(_shaderProgram);
         glDeleteShader(_fragmentShader);
         glDeleteShader(_vertexShader);
@@ -63,12 +63,14 @@ namespace graphics
         glDeleteVertexArrays(1, &_vao);
     }
 
-    void Aquarium::CompileShaders() {
+    void Shoal::CompileShaders() {
         CompileVertexShader();
+        CompileGeometryShader();
         CompileFragmentShader();
 
         _shaderProgram = glCreateProgram();
         glAttachShader(_shaderProgram, _vertexShader);
+        //glAttachShader(_shaderProgram, _geometryShader);
         glAttachShader(_shaderProgram, _fragmentShader);
         glBindFragDataLocation(_shaderProgram, 0, "outColor");
 
@@ -76,7 +78,7 @@ namespace graphics
         glUseProgram(_shaderProgram);
     }
 
-    void Aquarium::CompileVertexShader() {
+    void Shoal::CompileVertexShader() {
         const char* vertexSource = R"glsl(
             #version 150 core
 
@@ -89,6 +91,7 @@ namespace graphics
             void main()
             {
                 gl_Position = proj * view * model * vec4(position, 1.0);
+                gl_PointSize = 5.0;
             }
         )glsl";
 
@@ -109,17 +112,53 @@ namespace graphics
         }
     }
 
-    void Aquarium::CompileFragmentShader() {
+    void Shoal::CompileGeometryShader() {
+        const char* geometrySource = R"glsl(
+            #version 150 core
+
+            layout(points) in;
+            layout(line_strip, max_vertices = 2) out;
+
+            void main()
+            {
+                gl_Position = gl_in[0].gl_Position + vec4(-0.1, 0.0, 0.0, 0.0);
+                EmitVertex();
+
+                gl_Position = gl_in[0].gl_Position + vec4(0.1, 0.0, 0.0, 0.0);
+                EmitVertex();
+
+                EndPrimitive();
+            }
+        )glsl";
+
+        _geometryShader = glCreateShader(GL_GEOMETRY_SHADER);
+        glShaderSource(_geometryShader, 1, &geometrySource, NULL);
+        glCompileShader(_geometryShader);
+
+        GLint status;
+        glGetShaderiv(_geometryShader, GL_COMPILE_STATUS, &status);
+        if (status != GL_TRUE)
+        {
+            GLint length;
+            glGetShaderiv(_geometryShader, GL_INFO_LOG_LENGTH, &length);
+            std::vector<char> log(length);
+            glGetShaderInfoLog(_geometryShader, length, &length, log.data());
+            std::cerr << "Geometry shader compilation failed: " << log.data() << std::endl;
+            exit(1);
+        }
+    }
+
+    void Shoal::CompileFragmentShader() {
         const char* fragmentSource = R"glsl(
 			#version 150 core
 
-            uniform vec4 triangleColor;
+            uniform vec4 color;
 
 			out vec4 outColor;
 
 			void main()
 			{
-				outColor = triangleColor;
+				outColor = color;
 			}
         )glsl";
 
@@ -140,7 +179,7 @@ namespace graphics
         }
     }
 
-    void Aquarium::Draw(float time)
+    void Shoal::Draw(float time)
     {
         glBindVertexArray(_vao);
         glUseProgram(_shaderProgram);
@@ -153,6 +192,6 @@ namespace graphics
 
         glUniformMatrix4fv(_uniModel, 1, GL_FALSE, glm::value_ptr(model));
 
-        glDrawArrays(GL_LINES, 0, 24);
+        glDrawArrays(GL_POINTS, 0, 24);
     }
 }

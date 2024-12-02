@@ -38,16 +38,6 @@ __global__ void addKernel(int *c, const int *a, const int *b)
     c[i] = a[i] + b[i];
 }
 
-//static void quit(GLFWwindow* window, int key, int scancode, int action, int mods)
-//{
-//    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-//        glfwSetWindowShouldClose(window, GLFW_TRUE);
-//    }
-//}
-
-constexpr int WIDTH = 1920;
-constexpr int HEIGHT = 1080;
-
 int main()
 {
     glfwInit();
@@ -57,7 +47,7 @@ int main()
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_SAMPLES, 4);
-    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "GLFW OpenGL", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(1920, 1080, "GLFW OpenGL", NULL, NULL);
     glfwMakeContextCurrent(window);
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 

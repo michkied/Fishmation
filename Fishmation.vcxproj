@@ -95,10 +95,12 @@
     <ClCompile Include="animation.cpp" />
     <ClCompile Include="aquarium.cpp" />
     <ClCompile Include="glad.c" />
+    <ClCompile Include="Shoal.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="animation.hpp" />
     <ClInclude Include="aquarium.hpp" />
+    <ClInclude Include="Shoal.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

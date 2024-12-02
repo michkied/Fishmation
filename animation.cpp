@@ -4,16 +4,9 @@
 #include <vector>
 #include <chrono>
 
-#include "glm/glm.hpp"
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
 namespace graphics 
 {
-    constexpr int WIDTH = 1920;
-    constexpr int HEIGHT = 1080;
-
-    Animation::Animation(GLFWwindow* window) : _window(window) {}
+    Animation::Animation(GLFWwindow* window) : _window(window) { }
 
     Animation::~Animation() {
 
@@ -32,6 +25,7 @@ namespace graphics
             float time = std::chrono::duration_cast<std::chrono::duration<float>>(t_now - t_start).count();
 
             _aquarium.Draw(time);
+            _shoal.Draw(time);
 
             glfwSwapBuffers(_window);
             glfwPollEvents();

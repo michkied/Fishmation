@@ -1,5 +1,3 @@
-
-
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
 
@@ -9,17 +7,18 @@
 
 namespace graphics
 {
-	class Aquarium
+	class Shoal
 	{
 	public:
-		Aquarium(glm::mat4 view, glm::mat4 proj);
-		~Aquarium();
+		Shoal(glm::mat4 view, glm::mat4 proj);
+		~Shoal();
 
 		void Draw(float time);
 
 	private:
 		void CompileShaders();
 		void CompileVertexShader();
+		void CompileGeometryShader();
 		void CompileFragmentShader();
 
 		GLFWwindow* _window;
@@ -27,6 +26,7 @@ namespace graphics
 		GLuint _vao;
 		GLuint _vbo;
 		GLuint _vertexShader;
+		GLuint _geometryShader;
 		GLuint _fragmentShader;
 
 		GLint _uniColor;
