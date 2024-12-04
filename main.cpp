@@ -8,7 +8,7 @@
 
 #include "graphics/Animation.hpp"
 #include "Config.hpp"
-#include "computation/Behavior.hpp"
+#include "computation/Behavior.h"
 
 int main()
 {
@@ -27,14 +27,9 @@ int main()
     glEnable(GL_MULTISAMPLE);
 
     float shoal[Config::SHOAL_SIZE * 3] = {
-            -0.5f,  -0.5f, -0.5f,
-            -0.5f,  -0.5f,  0.5f,
-            -0.5f,  0.5f,  0.5f,
-            -0.5f,  0.5f, -0.5f,
-            0.5f,  -0.5f, -0.5f,
-            0.5f,  -0.5f,  0.5f,
-            0.5f,  0.5f,  0.5f,
-            0.5f,  0.5f, -0.5f,
+            -0.9f, 0.0f, 0.5f,
+            -0.9f, 0.0f, 0.5f,
+            -0.9f, 0.0f, 0.5f
     };
 
     computation::Behavior behavior = computation::Behavior();

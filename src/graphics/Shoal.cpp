@@ -15,7 +15,7 @@ namespace graphics
 
         glGenBuffers(1, &_vbo);
         glBindBuffer(GL_ARRAY_BUFFER, _vbo);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(float) * Config::SHOAL_SIZE * 3, shoalData, GL_DYNAMIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * Config::SHOAL_SIZE * 3, shoalData, GL_DYNAMIC_DRAW);
 
         CompileShaders();
 
@@ -30,9 +30,17 @@ namespace graphics
         _uniColor = glGetUniformLocation(_shaderProgram, "color");
         glUniform4f(_uniColor, 0.5f, 0.5f, 1.0f, 1.0f);
 
-        GLint posAttrib = glGetAttribLocation(_shaderProgram, "position");
-        glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 0, 0);
-        glEnableVertexAttribArray(posAttrib);
+        GLint posXAttrib = glGetAttribLocation(_shaderProgram, "posX");
+        glVertexAttribPointer(posXAttrib, 1, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * (Config::SHOAL_SIZE - 1), 0);
+        glEnableVertexAttribArray(posXAttrib);
+
+        GLint posYAttrib = glGetAttribLocation(_shaderProgram, "posY");
+        glVertexAttribPointer(posYAttrib, 1, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * (Config::SHOAL_SIZE - 1), 0);
+        glEnableVertexAttribArray(posYAttrib);
+
+        GLint posZAttrib = glGetAttribLocation(_shaderProgram, "posZ");
+        glVertexAttribPointer(posZAttrib, 1, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * (Config::SHOAL_SIZE - 1), 0);
+        glEnableVertexAttribArray(posZAttrib);
     }
 
     Shoal::~Shoal() {
@@ -68,11 +76,13 @@ namespace graphics
             uniform mat4 view;
             uniform mat4 proj;
 
-            in vec3 position;
+            in float posX;
+            in float posY;
+			in float posZ;
 
             void main()
             {
-                gl_Position = proj * view * model * vec4(position, 1.0);
+                gl_Position = proj * view * model * vec4(posX, posY, posZ, 1.0);
                 gl_PointSize = 5.0;
             }
         )glsl";

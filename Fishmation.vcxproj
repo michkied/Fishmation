@@ -89,7 +89,7 @@
     </CudaLink>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <CudaCompile Include="src\computation\Behavior.cpp" />
+    <CudaCompile Include="src\computation\Behavior.cu" />
     <CudaCompile Include="src\computation\Kernel.cu" />
   </ItemGroup>
   <ItemGroup>
@@ -100,7 +100,7 @@
     <ClCompile Include="src\graphics\Shoal.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\computation\Behavior.hpp" />
+    <ClInclude Include="include\computation\Behavior.h" />
     <ClInclude Include="include\computation\Kernel.h" />
     <ClInclude Include="include\computation\types.h" />
     <ClInclude Include="include\graphics\Animation.hpp" />

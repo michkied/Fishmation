@@ -2,7 +2,7 @@
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 
-#include "computation/Behavior.hpp"
+#include "computation/Behavior.h"
 #include "computation/Kernel.h"
 #include <stdio.h>
 
