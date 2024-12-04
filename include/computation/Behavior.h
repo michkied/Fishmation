@@ -1,18 +1,22 @@
+#pragma once
 
+#include "glad/glad.h"
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
+#include <mutex>
 
 namespace computation
 {
     class Behavior
     {
     public:
-  //      Behavior();
-		//~Behavior();
+        Behavior(GLuint shoalBuffer);
+		~Behavior();
 
-        void Run();
+        cudaError_t ComputeMove();
+
     private:
-        // Helper function for using CUDA to add vectors in parallel.
-        cudaError_t addWithCuda(int* c, const int* a, const int* b, unsigned int size);
+        GLuint _shoalBuffer;
+        cudaGraphicsResource* _resource;
     };
 }

@@ -15,7 +15,7 @@ namespace graphics
 
         glGenBuffers(1, &_vbo);
         glBindBuffer(GL_ARRAY_BUFFER, _vbo);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * Config::SHOAL_SIZE * 3, shoalData, GL_DYNAMIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * Config::SHOAL_SIZE * 3, shoalData, GL_STREAM_DRAW);
 
         CompileShaders();
 
@@ -31,31 +31,35 @@ namespace graphics
         glUniform4f(_uniColor, 0.5f, 0.5f, 1.0f, 1.0f);
 
         GLint posXAttrib = glGetAttribLocation(_shaderProgram, "posX");
-        glVertexAttribPointer(posXAttrib, 1, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * (Config::SHOAL_SIZE - 1), 0);
+        glVertexAttribPointer(posXAttrib, 1, GL_FLOAT, GL_FALSE, 0, 0);
         glEnableVertexAttribArray(posXAttrib);
 
         GLint posYAttrib = glGetAttribLocation(_shaderProgram, "posY");
-        glVertexAttribPointer(posYAttrib, 1, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * (Config::SHOAL_SIZE - 1), 0);
+        glVertexAttribPointer(posYAttrib, 1, GL_FLOAT, GL_FALSE, 0, (GLvoid*)(sizeof(GLfloat) * Config::SHOAL_SIZE));
         glEnableVertexAttribArray(posYAttrib);
 
         GLint posZAttrib = glGetAttribLocation(_shaderProgram, "posZ");
-        glVertexAttribPointer(posZAttrib, 1, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * (Config::SHOAL_SIZE - 1), 0);
+        glVertexAttribPointer(posZAttrib, 1, GL_FLOAT, GL_FALSE, 0, (GLvoid*)(sizeof(GLfloat) * Config::SHOAL_SIZE * 2));
         glEnableVertexAttribArray(posZAttrib);
     }
 
     Shoal::~Shoal() {
         glDeleteProgram(_shaderProgram);
         glDeleteShader(_fragmentShader);
-        glDeleteShader(_geometryShader);
+        //glDeleteShader(_geometryShader);
         glDeleteShader(_vertexShader);
 
         glDeleteBuffers(1, &_vbo);
         glDeleteVertexArrays(1, &_vao);
     }
 
+    GLuint Shoal::GetShoalBuffer() {
+        return _vbo;
+    }
+
     void Shoal::CompileShaders() {
         CompileVertexShader();
-        CompileGeometryShader();
+        //CompileGeometryShader();
         CompileFragmentShader();
 
         _shaderProgram = glCreateProgram();
@@ -175,8 +179,9 @@ namespace graphics
     {
         glBindVertexArray(_vao);
         glUseProgram(_shaderProgram);
+        //glBindBuffer(GL_ARRAY_BUFFER, _vbo);
 
-        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * Config::SHOAL_SIZE * 3, _shoalData);
+        //glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * Config::SHOAL_SIZE * 3, _shoalData);
 
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::rotate(

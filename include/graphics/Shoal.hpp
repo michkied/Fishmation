@@ -13,6 +13,7 @@ namespace graphics
 		Shoal(glm::mat4 view, glm::mat4 proj, float* shoalData);
 		~Shoal();
 
+		GLuint GetShoalBuffer();
 		void Draw(float time);
 
 	private:

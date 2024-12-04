@@ -1,93 +1,57 @@
-﻿
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
-
-#include "computation/Behavior.h"
+﻿#include "computation/Behavior.h"
 #include "computation/Kernel.h"
 #include <stdio.h>
+#include <chrono>
+#include <thread>
+#include <cuda_gl_interop.h>
+#include "Config.hpp"
 
 namespace computation {
 
-    void Behavior::Run() {
-        const int arraySize = 5;
-        const int a[arraySize] = { 1, 2, 3, 4, 5 };
-        const int b[arraySize] = { 10, 20, 30, 40, 50 };
-        int c[arraySize] = { 0 };
+    Behavior::Behavior(GLuint shoalBuffer) : _shoalBuffer(shoalBuffer) {
+        cudaError_t cudaStatus;
 
-        // Add vectors in parallel.
-        cudaError_t cudaStatus = addWithCuda(c, a, b, arraySize);
+        cudaStatus = cudaSetDevice(0);
         if (cudaStatus != cudaSuccess) {
-            fprintf(stderr, "addWithCuda failed!");
+            fprintf(stderr, "cudaSetDevice failed!  Do you have a CUDA-capable GPU installed?");
             return;
         }
 
-        printf("{1,2,3,4,5} + {10,20,30,40,50} = {%d,%d,%d,%d,%d}\n",
-            c[0], c[1], c[2], c[3], c[4]);
-
-        // cudaDeviceReset must be called before exiting in order for profiling and
-        // tracing tools such as Nsight and Visual Profiler to show complete traces.
-        cudaStatus = cudaDeviceReset();
+        cudaStatus = cudaGraphicsGLRegisterBuffer(&_resource, _shoalBuffer, cudaGraphicsRegisterFlagsNone);
         if (cudaStatus != cudaSuccess) {
-            fprintf(stderr, "cudaDeviceReset failed!");
+            fprintf(stderr, "cudaGraphicsGLRegisterBuffer failed!");
             return;
         }
     }
 
-    // Helper function for using CUDA to add vectors in parallel.
-    cudaError_t Behavior::addWithCuda(int* c, const int* a, const int* b, unsigned int size)
+    Behavior::~Behavior() {}
+
+    cudaError_t Behavior::ComputeMove()
     {
-        int* dev_a = 0;
-        int* dev_b = 0;
-        int* dev_c = 0;
         cudaError_t cudaStatus;
 
-        // Choose which GPU to run on, change this on a multi-GPU system.
-        cudaStatus = cudaSetDevice(0);
+        cudaStatus = cudaGraphicsMapResources(1, &_resource, 0);
         if (cudaStatus != cudaSuccess) {
-            fprintf(stderr, "cudaSetDevice failed!  Do you have a CUDA-capable GPU installed?");
-            goto Error;
+            fprintf(stderr, "cudaGraphicsMapResources failed!");
+            return cudaStatus;
         }
 
-        // Allocate GPU buffers for three vectors (two input, one output)    .
-        cudaStatus = cudaMalloc((void**)&dev_c, size * sizeof(int));
+        void* dev_ptr;
+        size_t size;
+        cudaStatus = cudaGraphicsResourceGetMappedPointer(&dev_ptr, &size, _resource);
         if (cudaStatus != cudaSuccess) {
-            fprintf(stderr, "cudaMalloc failed!");
-            goto Error;
-        }
-
-        cudaStatus = cudaMalloc((void**)&dev_a, size * sizeof(int));
-        if (cudaStatus != cudaSuccess) {
-            fprintf(stderr, "cudaMalloc failed!");
-            goto Error;
-        }
-
-        cudaStatus = cudaMalloc((void**)&dev_b, size * sizeof(int));
-        if (cudaStatus != cudaSuccess) {
-            fprintf(stderr, "cudaMalloc failed!");
-            goto Error;
-        }
-
-        // Copy input vectors from host memory to GPU buffers.
-        cudaStatus = cudaMemcpy(dev_a, a, size * sizeof(int), cudaMemcpyHostToDevice);
-        if (cudaStatus != cudaSuccess) {
-            fprintf(stderr, "cudaMemcpy failed!");
-            goto Error;
-        }
-
-        cudaStatus = cudaMemcpy(dev_b, b, size * sizeof(int), cudaMemcpyHostToDevice);
-        if (cudaStatus != cudaSuccess) {
-            fprintf(stderr, "cudaMemcpy failed!");
-            goto Error;
+            fprintf(stderr, "cudaGraphicsResourceGetMappedPointer failed!");
+            return cudaStatus;
         }
 
         // Launch a kernel on the GPU with one thread for each element.
-        addKernel << <1, size >> > (dev_c, dev_a, dev_b);
+        computeMoveKernel << <1, Config::SHOAL_SIZE >> > ((float*)dev_ptr);
 
         // Check for any errors launching the kernel
         cudaStatus = cudaGetLastError();
         if (cudaStatus != cudaSuccess) {
             fprintf(stderr, "addKernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
-            goto Error;
+            return cudaStatus;
         }
 
         // cudaDeviceSynchronize waits for the kernel to finish, and returns
@@ -95,20 +59,21 @@ namespace computation {
         cudaStatus = cudaDeviceSynchronize();
         if (cudaStatus != cudaSuccess) {
             fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching addKernel!\n", cudaStatus);
-            goto Error;
+            return cudaStatus;
         }
 
-        // Copy output vector from GPU buffer to host memory.
-        cudaStatus = cudaMemcpy(c, dev_c, size * sizeof(int), cudaMemcpyDeviceToHost);
+        float output[Config::SHOAL_SIZE * 3];
+        cudaStatus = cudaMemcpy(output, dev_ptr, size, cudaMemcpyDeviceToHost);
         if (cudaStatus != cudaSuccess) {
             fprintf(stderr, "cudaMemcpy failed!");
-            goto Error;
+            return cudaStatus;
         }
 
-    Error:
-        cudaFree(dev_c);
-        cudaFree(dev_a);
-        cudaFree(dev_b);
+        cudaStatus = cudaGraphicsUnmapResources(1, &_resource, 0);
+        if (cudaStatus != cudaSuccess) {
+            fprintf(stderr, "cudaGraphicsUnmapResources failed!");
+            return cudaStatus;
+        }
 
         return cudaStatus;
     }

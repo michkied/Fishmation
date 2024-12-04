@@ -3,10 +3,13 @@
 
 #include <stdio.h>
 #include <thread>
+#include <mutex>
+#include <chrono>
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
 
-#include "graphics/Animation.hpp"
+#include "graphics/Aquarium.hpp"
+#include "graphics/Shoal.hpp"
 #include "Config.hpp"
 #include "computation/Behavior.h"
 
@@ -26,19 +29,52 @@ int main()
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_MULTISAMPLE);
 
-    float shoal[Config::SHOAL_SIZE * 3] = {
+    float shoalData[Config::SHOAL_SIZE * 3] = {
             -0.9f, 0.0f, 0.5f,
             -0.9f, 0.0f, 0.5f,
             -0.9f, 0.0f, 0.5f
     };
 
-    computation::Behavior behavior = computation::Behavior();
-    std::thread behaviorThread(&computation::Behavior::Run, &behavior);
+    glm::mat4 view = glm::lookAt(
+        glm::vec3(3.0f, 0.0f, 0.5f),
+        glm::vec3(0.0f, 0.0f, 0.0f),
+        glm::vec3(0.0f, 0.0f, 1.0f)
+    );
+    glm::mat4 proj = glm::perspective(glm::radians(70.0f), 1920.0f / 1080.0f, 1.0f, 10.0f);
 
-    graphics::Animation animation = graphics::Animation(window, shoal);
-    animation.Start();
+    graphics::Aquarium aquarium = graphics::Aquarium(view, proj);
+    graphics::Shoal shoal = graphics::Shoal(view, proj, shoalData);
+    computation::Behavior behavior = computation::Behavior(shoal.GetShoalBuffer());
 
-    behaviorThread.join();
+    cudaError_t cudaStatus;
+    auto t_start = std::chrono::high_resolution_clock::now();
+    while (!glfwWindowShouldClose(window)) {
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        auto t_now = std::chrono::high_resolution_clock::now();
+        float time = std::chrono::duration_cast<std::chrono::duration<float>>(t_now - t_start).count();
+
+        aquarium.Draw(time);
+        shoal.Draw(time);
+
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+
+        cudaStatus = behavior.ComputeMove();
+        if (cudaStatus != cudaSuccess) {
+            fprintf(stderr, "ComputeMove failed!");
+            return 1;
+        }
+    }
+
+    // cudaDeviceReset must be called before exiting in order for profiling and
+    // tracing tools such as Nsight and Visual Profiler to show complete traces.
+    cudaStatus = cudaDeviceReset();
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaDeviceReset failed!");
+        return 1;
+    }
 
     return 0;
 }

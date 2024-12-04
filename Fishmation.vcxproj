@@ -94,7 +94,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="src\graphics\Animation.cpp" />
     <ClCompile Include="src\graphics\Aquarium.cpp" />
     <ClCompile Include="src\glad.c" />
     <ClCompile Include="src\graphics\Shoal.cpp" />
@@ -103,7 +102,6 @@
     <ClInclude Include="include\computation\Behavior.h" />
     <ClInclude Include="include\computation\Kernel.h" />
     <ClInclude Include="include\computation\types.h" />
-    <ClInclude Include="include\graphics\Animation.hpp" />
     <ClInclude Include="include\graphics\Aquarium.hpp" />
     <ClInclude Include="include\Config.hpp" />
     <ClInclude Include="include\graphics\Shoal.hpp" />

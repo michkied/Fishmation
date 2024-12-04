@@ -4,5 +4,5 @@
 #include "device_launch_parameters.h"
 
 namespace computation {
-	__global__ void addKernel(int* c, const int* a, const int* b);
+	__global__ void computeMoveKernel(float* positions);
 }

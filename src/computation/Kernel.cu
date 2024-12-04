@@ -2,9 +2,9 @@
 #include "computation/Kernel.h"
 
 namespace computation {
-    __global__ void addKernel(int* c, const int* a, const int* b)
+    __global__ void computeMoveKernel(float* positions)
     {
         int i = threadIdx.x;
-        c[i] = a[i] + b[i];
+        positions[i + 6] += 0.001f;
     }
 }
