@@ -53,7 +53,7 @@ namespace computation {
         float Vy = velocities->velocityY[i];
         float Vz = velocities->velocityZ[i];
 
-        float kF = 0.001f;
+        float kF = 0.0001f;
 
         float steeringX = 0.0f;
         float steeringY = 0.0f;
@@ -74,58 +74,25 @@ namespace computation {
         steeringZ -= kF * kF / (dist1Z * dist1Z);
         steeringZ += kF * kF / (dist2Z * dist2Z);
 
+        float steeringStrength = sqrt(steeringX * steeringX + steeringY * steeringY + steeringZ * steeringZ);
+        if (steeringStrength != 0.0f) {
+            float clampedSteeringStrength = steeringStrength > properties->maxForce ? properties->maxForce : steeringStrength;
 
-  //      float timeToClosestWall = FLT_MAX;
-  //      if (Vx > 0 && timeToClosestWall > (Config::AQUARIUM_SIZE / 2 - Px) / Vx) {
-  //          timeToClosestWall = (Config::AQUARIUM_SIZE / 2 - Px) / Vx;
-  //          steeringX = Vx - Vx * kF / timeToClosestWall / timeToClosestWall;
-  //      }
-  //      if (Vx < 0 && timeToClosestWall > (-Config::AQUARIUM_SIZE / 2 - Px) / Vx) {
-		//	timeToClosestWall = (-Config::AQUARIUM_SIZE / 2 - Px) / Vx;
-  //          steeringX = Vx - Vx * kF / timeToClosestWall / timeToClosestWall;
-		//}
-  //      if (Vy > 0 && timeToClosestWall > (Config::AQUARIUM_SIZE / 2 - Py) / Vy) {
-  //          timeToClosestWall = (Config::AQUARIUM_SIZE / 2 - Py) / Vy;
-  //          steeringX = Vx;
-  //          steeringY = Vy - Vy * kF / timeToClosestWall / timeToClosestWall;
-  //      }
-  //      if (Vy < 0 && timeToClosestWall > (-Config::AQUARIUM_SIZE / 2 - Py) / Vy) {
-		//	timeToClosestWall = (-Config::AQUARIUM_SIZE / 2 - Py) / Vy;
-  //          steeringX = Vx;
-		//	steeringY = Vy - Vy * kF / timeToClosestWall / timeToClosestWall;
-		//}
-  //      if (Vz > 0 && timeToClosestWall > (Config::AQUARIUM_SIZE / 2 - Pz) / Vz) {
-		//	timeToClosestWall = (Config::AQUARIUM_SIZE / 2 - Pz) / Vz;
-  //          steeringX = Vx;
-  //          steeringY = Vy;
-  //          steeringZ = Vz - Vz * kF / timeToClosestWall / timeToClosestWall;
-		//}
-  //      if (Vz < 0 && timeToClosestWall > (-Config::AQUARIUM_SIZE / 2 - Pz) / Vz) {
-  //          timeToClosestWall = (-Config::AQUARIUM_SIZE / 2 - Pz) / Vz;
-  //          steeringX = Vx;
-  //          steeringY = Vy;
-  //          steeringZ = Vz - Vz * kF / timeToClosestWall / timeToClosestWall;
-  //      }
+            float FsX = steeringX * clampedSteeringStrength / steeringStrength;
+            float FsY = steeringY * clampedSteeringStrength / steeringStrength;
+            float FsZ = steeringZ * clampedSteeringStrength / steeringStrength;
 
-        float FsX = steeringX > properties->maxForce ? properties->maxForce : steeringX;
-        float FsY = steeringY > properties->maxForce ? properties->maxForce : steeringY;
-        float FsZ = steeringZ > properties->maxForce ? properties->maxForce : steeringZ;
+            float aX = FsX / properties->mass;
+            float aY = FsY / properties->mass;
+            float aZ = FsZ / properties->mass;
 
-        float aX = FsX / properties->mass;
-        float aY = FsY / properties->mass;
-        float aZ = FsZ / properties->mass;
-
-        velocities->velocityX[i] = (Vx + aX > properties->maxSpeed) ? properties->maxSpeed : Vx + aX;
-        velocities->velocityY[i] = (Vy + aY > properties->maxSpeed) ? properties->maxSpeed : Vy + aY;
-        velocities->velocityZ[i] = (Vz + aZ > properties->maxSpeed) ? properties->maxSpeed : Vz + aZ;
+            velocities->velocityX[i] = (Vx + aX > properties->maxSpeed) ? properties->maxSpeed : Vx + aX;
+            velocities->velocityY[i] = (Vy + aY > properties->maxSpeed) ? properties->maxSpeed : Vy + aY;
+            velocities->velocityZ[i] = (Vz + aZ > properties->maxSpeed) ? properties->maxSpeed : Vz + aZ;
+		}
 
         positions[xIndex] += velocities->velocityX[i];
         positions[yIndex] += velocities->velocityY[i];
         positions[zIndex] += velocities->velocityZ[i];
-
-
-        //positions[xIndex] += velocities->velocityX[i];
-        //positions[yIndex] += velocities->velocityY[i];
-        //positions[zIndex] += velocities->velocityZ[i];
     }
 }
