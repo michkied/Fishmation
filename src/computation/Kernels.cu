@@ -54,40 +54,44 @@ namespace computation {
 
         float kF = 10.0f;
 
-        float steeringX = Vx;
-        float steeringY = Vy;
-        float steeringZ = Vz;
-        float timeToClosestWall = FLT_MAX;
-        if (Vx > 0 && timeToClosestWall > (Config::AQUARIUM_SIZE / 2 - Px) / Vx) {
-            timeToClosestWall = (Config::AQUARIUM_SIZE / 2 - Px) / Vx;
-            steeringX = Vx - Vx * kF / timeToClosestWall / timeToClosestWall;
-        }
-        if (Vx < 0 && timeToClosestWall > (-Config::AQUARIUM_SIZE / 2 - Px) / Vx) {
-			timeToClosestWall = (-Config::AQUARIUM_SIZE / 2 - Px) / Vx;
-            steeringX = Vx - Vx * kF / timeToClosestWall / timeToClosestWall;
-		}
-        if (Vy > 0 && timeToClosestWall > (Config::AQUARIUM_SIZE / 2 - Py) / Vy) {
-            timeToClosestWall = (Config::AQUARIUM_SIZE / 2 - Py) / Vy;
-            steeringX = Vx;
-            steeringY = Vy - Vy * kF / timeToClosestWall / timeToClosestWall;
-        }
-        if (Vy < 0 && timeToClosestWall > (-Config::AQUARIUM_SIZE / 2 - Py) / Vy) {
-			timeToClosestWall = (-Config::AQUARIUM_SIZE / 2 - Py) / Vy;
-            steeringX = Vx;
-			steeringY = Vy - Vy * kF / timeToClosestWall / timeToClosestWall;
-		}
-        if (Vz > 0 && timeToClosestWall > (Config::AQUARIUM_SIZE / 2 - Pz) / Vz) {
-			timeToClosestWall = (Config::AQUARIUM_SIZE / 2 - Pz) / Vz;
-            steeringX = Vx;
-            steeringY = Vy;
-            steeringZ = Vz - Vz * kF / timeToClosestWall / timeToClosestWall;
-		}
-        if (Vz < 0 && timeToClosestWall > (-Config::AQUARIUM_SIZE / 2 - Pz) / Vz) {
-            timeToClosestWall = (-Config::AQUARIUM_SIZE / 2 - Pz) / Vz;
-            steeringX = Vx;
-            steeringY = Vy;
-            steeringZ = Vz - Vz * kF / timeToClosestWall / timeToClosestWall;
-        }
+        float steeringX = 0.0f;
+        float steeringY = 0.0f;
+        float steeringZ = 0.0f;
+
+
+
+
+  //      float timeToClosestWall = FLT_MAX;
+  //      if (Vx > 0 && timeToClosestWall > (Config::AQUARIUM_SIZE / 2 - Px) / Vx) {
+  //          timeToClosestWall = (Config::AQUARIUM_SIZE / 2 - Px) / Vx;
+  //          steeringX = Vx - Vx * kF / timeToClosestWall / timeToClosestWall;
+  //      }
+  //      if (Vx < 0 && timeToClosestWall > (-Config::AQUARIUM_SIZE / 2 - Px) / Vx) {
+		//	timeToClosestWall = (-Config::AQUARIUM_SIZE / 2 - Px) / Vx;
+  //          steeringX = Vx - Vx * kF / timeToClosestWall / timeToClosestWall;
+		//}
+  //      if (Vy > 0 && timeToClosestWall > (Config::AQUARIUM_SIZE / 2 - Py) / Vy) {
+  //          timeToClosestWall = (Config::AQUARIUM_SIZE / 2 - Py) / Vy;
+  //          steeringX = Vx;
+  //          steeringY = Vy - Vy * kF / timeToClosestWall / timeToClosestWall;
+  //      }
+  //      if (Vy < 0 && timeToClosestWall > (-Config::AQUARIUM_SIZE / 2 - Py) / Vy) {
+		//	timeToClosestWall = (-Config::AQUARIUM_SIZE / 2 - Py) / Vy;
+  //          steeringX = Vx;
+		//	steeringY = Vy - Vy * kF / timeToClosestWall / timeToClosestWall;
+		//}
+  //      if (Vz > 0 && timeToClosestWall > (Config::AQUARIUM_SIZE / 2 - Pz) / Vz) {
+		//	timeToClosestWall = (Config::AQUARIUM_SIZE / 2 - Pz) / Vz;
+  //          steeringX = Vx;
+  //          steeringY = Vy;
+  //          steeringZ = Vz - Vz * kF / timeToClosestWall / timeToClosestWall;
+		//}
+  //      if (Vz < 0 && timeToClosestWall > (-Config::AQUARIUM_SIZE / 2 - Pz) / Vz) {
+  //          timeToClosestWall = (-Config::AQUARIUM_SIZE / 2 - Pz) / Vz;
+  //          steeringX = Vx;
+  //          steeringY = Vy;
+  //          steeringZ = Vz - Vz * kF / timeToClosestWall / timeToClosestWall;
+  //      }
 
         float FsX = steeringX > properties->maxForce ? properties->maxForce : steeringX;
         float FsY = steeringY > properties->maxForce ? properties->maxForce : steeringY;

@@ -45,7 +45,7 @@ int main()
 
     computation::FishProperties properties;
     properties.mass = 1.0f;
-    properties.maxForce = 1.0f;
+    properties.maxForce = 0.01f;
     properties.maxSpeed = 0.001f;
     properties.fieldOfView = 180.0f;
     properties.viewDistance = 1.0f; // has to evenly divide the space
