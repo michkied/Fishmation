@@ -1,5 +1,5 @@
 #include "computation/Kernels.h"
-#include <cmath>
+#include <limits>
 
 namespace computation {
     __global__ void assignFishToRegionsKernel(float* positions, int* fishIds, int* regionIndexes)
@@ -43,8 +43,71 @@ namespace computation {
         int xIndex = i;
         int yIndex = i + Config::SHOAL_SIZE;
         int zIndex = i + Config::SHOAL_SIZE * 2;
+
+        float Px = positions[xIndex];
+        float Py = positions[yIndex];
+        float Pz = positions[zIndex];
+
+        float Vx = velocities->velocityX[i];
+        float Vy = velocities->velocityY[i];
+        float Vz = velocities->velocityZ[i];
+
+        float kF = 10.0f;
+
+        float steeringX = Vx;
+        float steeringY = Vy;
+        float steeringZ = Vz;
+        float timeToClosestWall = FLT_MAX;
+        if (Vx > 0 && timeToClosestWall > (Config::AQUARIUM_SIZE / 2 - Px) / Vx) {
+            timeToClosestWall = (Config::AQUARIUM_SIZE / 2 - Px) / Vx;
+            steeringX = Vx - Vx * kF / timeToClosestWall / timeToClosestWall;
+        }
+        if (Vx < 0 && timeToClosestWall > (-Config::AQUARIUM_SIZE / 2 - Px) / Vx) {
+			timeToClosestWall = (-Config::AQUARIUM_SIZE / 2 - Px) / Vx;
+            steeringX = Vx - Vx * kF / timeToClosestWall / timeToClosestWall;
+		}
+        if (Vy > 0 && timeToClosestWall > (Config::AQUARIUM_SIZE / 2 - Py) / Vy) {
+            timeToClosestWall = (Config::AQUARIUM_SIZE / 2 - Py) / Vy;
+            steeringX = Vx;
+            steeringY = Vy - Vy * kF / timeToClosestWall / timeToClosestWall;
+        }
+        if (Vy < 0 && timeToClosestWall > (-Config::AQUARIUM_SIZE / 2 - Py) / Vy) {
+			timeToClosestWall = (-Config::AQUARIUM_SIZE / 2 - Py) / Vy;
+            steeringX = Vx;
+			steeringY = Vy - Vy * kF / timeToClosestWall / timeToClosestWall;
+		}
+        if (Vz > 0 && timeToClosestWall > (Config::AQUARIUM_SIZE / 2 - Pz) / Vz) {
+			timeToClosestWall = (Config::AQUARIUM_SIZE / 2 - Pz) / Vz;
+            steeringX = Vx;
+            steeringY = Vy;
+            steeringZ = Vz - Vz * kF / timeToClosestWall / timeToClosestWall;
+		}
+        if (Vz < 0 && timeToClosestWall > (-Config::AQUARIUM_SIZE / 2 - Pz) / Vz) {
+            timeToClosestWall = (-Config::AQUARIUM_SIZE / 2 - Pz) / Vz;
+            steeringX = Vx;
+            steeringY = Vy;
+            steeringZ = Vz - Vz * kF / timeToClosestWall / timeToClosestWall;
+        }
+
+        float FsX = steeringX > properties->maxForce ? properties->maxForce : steeringX;
+        float FsY = steeringY > properties->maxForce ? properties->maxForce : steeringY;
+        float FsZ = steeringZ > properties->maxForce ? properties->maxForce : steeringZ;
+
+        float aX = FsX / properties->mass;
+        float aY = FsY / properties->mass;
+        float aZ = FsZ / properties->mass;
+
+        velocities->velocityX[i] = (Vx + aX > properties->maxSpeed) ? properties->maxSpeed : Vx + aX;
+        velocities->velocityY[i] = (Vy + aY > properties->maxSpeed) ? properties->maxSpeed : Vy + aY;
+        velocities->velocityZ[i] = (Vz + aZ > properties->maxSpeed) ? properties->maxSpeed : Vz + aZ;
+
         positions[xIndex] += velocities->velocityX[i];
         positions[yIndex] += velocities->velocityY[i];
         positions[zIndex] += velocities->velocityZ[i];
+
+
+        //positions[xIndex] += velocities->velocityX[i];
+        //positions[yIndex] += velocities->velocityY[i];
+        //positions[zIndex] += velocities->velocityZ[i];
     }
 }

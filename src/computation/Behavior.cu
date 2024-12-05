@@ -44,9 +44,9 @@ namespace computation {
             return;
         }
         FishShoalVelocities velocities;
-        std::fill(velocities.velocityX, velocities.velocityX + Config::SHOAL_SIZE, 0.0f);
-        std::fill(velocities.velocityY, velocities.velocityY + Config::SHOAL_SIZE, 0.0f);
-        std::fill(velocities.velocityZ, velocities.velocityZ + Config::SHOAL_SIZE, 0.0f);
+        std::fill(velocities.velocityX, velocities.velocityX + Config::SHOAL_SIZE, 0.001f);
+        std::fill(velocities.velocityY, velocities.velocityY + Config::SHOAL_SIZE, 0.000f);
+        std::fill(velocities.velocityZ, velocities.velocityZ + Config::SHOAL_SIZE, 0.001f);
         cudaStatus = cudaMemcpy(_velocitiesDevice, &velocities, sizeof(FishShoalVelocities), cudaMemcpyHostToDevice);
         if (cudaStatus != cudaSuccess) {
             fprintf(stderr, "cudaMemcpy failed!");
@@ -95,6 +95,7 @@ namespace computation {
             return cudaStatus;
         }
 
+        // Assign fish to regions
         assignFishToRegionsKernel << <1, Config::SHOAL_SIZE >> > ((float*)positions_dev, _fishIdsDevice, _regionIndexesDevice);
         thrust::sort_by_key(thrust::device, _regionIndexesDevice, _regionIndexesDevice + Config::SHOAL_SIZE, _fishIdsDevice);
         findRegionStartsKernel << <1, Config::SHOAL_SIZE >> > (_fishIdsDevice, _regionIndexesDevice, _regionStartsDevice);
@@ -113,27 +114,28 @@ namespace computation {
             return cudaStatus;
         }
 
-        //float output[Config::SHOAL_SIZE * 3];
-        //cudaStatus = cudaMemcpy(output, positions_dev, size, cudaMemcpyDeviceToHost);
-        //if (cudaStatus != cudaSuccess) {
-        //    fprintf(stderr, "cudaMemcpy failed!");
-        //    return cudaStatus;
-        //}
+        float output4[Config::SHOAL_SIZE * 3];
+        cudaStatus = cudaMemcpy(output4, positions_dev, size, cudaMemcpyDeviceToHost);
+        if (cudaStatus != cudaSuccess) {
+            fprintf(stderr, "cudaMemcpy failed!");
+            return cudaStatus;
+        }
 
+        // for debugging
         int output[Config::SHOAL_SIZE];
         cudaStatus = cudaMemcpy(output, _regionIndexesDevice, Config::SHOAL_SIZE * sizeof(int), cudaMemcpyDeviceToHost);
         if (cudaStatus != cudaSuccess) {
             fprintf(stderr, "cudaMemcpy failed!");
             return cudaStatus;
         }
-
+        // for debugging
         int output2[Config::SHOAL_SIZE];
         cudaStatus = cudaMemcpy(output2, _fishIdsDevice, Config::SHOAL_SIZE * sizeof(int), cudaMemcpyDeviceToHost);
         if (cudaStatus != cudaSuccess) {
             fprintf(stderr, "cudaMemcpy failed!");
             return cudaStatus;
         }
-
+        // for debugging
         int output3[Config::REGION_DIM_COUNT * Config::REGION_DIM_COUNT * Config::REGION_DIM_COUNT];
         cudaStatus = cudaMemcpy(output3, _regionStartsDevice, Config::REGION_DIM_COUNT * Config::REGION_DIM_COUNT * Config::REGION_DIM_COUNT * sizeof(int), cudaMemcpyDeviceToHost);
         if (cudaStatus != cudaSuccess) {
