@@ -44,9 +44,9 @@ namespace computation {
             return;
         }
         FishShoalVelocities velocities;
-        std::fill(velocities.velocityX, velocities.velocityX + Config::SHOAL_SIZE, 0.001f);
-        std::fill(velocities.velocityY, velocities.velocityY + Config::SHOAL_SIZE, 0.000f);
-        std::fill(velocities.velocityZ, velocities.velocityZ + Config::SHOAL_SIZE, 0.001f);
+        std::fill(velocities.velocityX, velocities.velocityX + Config::SHOAL_SIZE, 0.005f);
+        std::fill(velocities.velocityY, velocities.velocityY + Config::SHOAL_SIZE, 0.005f);
+        std::fill(velocities.velocityZ, velocities.velocityZ + Config::SHOAL_SIZE, 0.005f);
         cudaStatus = cudaMemcpy(_velocitiesDevice, &velocities, sizeof(FishShoalVelocities), cudaMemcpyHostToDevice);
         if (cudaStatus != cudaSuccess) {
             fprintf(stderr, "cudaMemcpy failed!");

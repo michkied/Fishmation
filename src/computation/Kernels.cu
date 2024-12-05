@@ -1,5 +1,6 @@
 #include "computation/Kernels.h"
 #include <limits>
+#include <cmath>
 
 namespace computation {
     __global__ void assignFishToRegionsKernel(float* positions, int* fishIds, int* regionIndexes)
@@ -52,13 +53,26 @@ namespace computation {
         float Vy = velocities->velocityY[i];
         float Vz = velocities->velocityZ[i];
 
-        float kF = 10.0f;
+        float kF = 0.001f;
 
         float steeringX = 0.0f;
         float steeringY = 0.0f;
         float steeringZ = 0.0f;
 
+        float dist1X = Config::AQUARIUM_SIZE / 2 - Px;
+        float dist2X = -Config::AQUARIUM_SIZE / 2 - Px;
+        steeringX -= kF * kF / (dist1X * dist1X);
+        steeringX += kF * kF / (dist2X * dist2X);
 
+        float dist1Y = Config::AQUARIUM_SIZE / 2 - Py;
+        float dist2Y = -Config::AQUARIUM_SIZE / 2 - Py;
+        steeringY -= kF * kF / (dist1Y * dist1Y);
+        steeringY += kF * kF / (dist2Y * dist2Y);
+
+        float dist1Z = Config::AQUARIUM_SIZE / 2 - Pz;
+        float dist2Z = -Config::AQUARIUM_SIZE / 2 - Pz;
+        steeringZ -= kF * kF / (dist1Z * dist1Z);
+        steeringZ += kF * kF / (dist2Z * dist2Z);
 
 
   //      float timeToClosestWall = FLT_MAX;
