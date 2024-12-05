@@ -17,6 +17,8 @@ namespace computation
         cudaError_t ComputeMove();
 
     private:
+        cudaError_t ComputeRegionsCheatSheet();
+
         GLuint _shoalBuffer;
         cudaGraphicsResource* _resource;
 
@@ -26,5 +28,6 @@ namespace computation
         int* _fishIdsDevice;
         int* _regionIndexesDevice;
         int* _regionStartsDevice;
+        int* _regionsCheatSheetDevice;
     };
 }

@@ -8,4 +8,5 @@ namespace Config {
 	constexpr float REGION_SIZE = 1.0f;
 
 	constexpr int REGION_DIM_COUNT = (int)(AQUARIUM_SIZE / REGION_SIZE);
+	constexpr int REGION_COUNT = REGION_DIM_COUNT * REGION_DIM_COUNT * REGION_DIM_COUNT;
 }

@@ -7,8 +7,13 @@ namespace computation {
         float mass;
         float maxForce;
         float maxSpeed;
-        float fieldOfView;
+        float fieldOfViewCos;
         float viewDistance;
+
+        float containmentWeight;
+        float alignmentWeight;
+        float cohesionWeight;
+        float separationWeight;
     };
 
     struct FishShoalVelocities

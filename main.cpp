@@ -2,6 +2,7 @@
 #include "device_launch_parameters.h"
 
 #include <stdio.h>
+#include <cmath>
 #include <thread>
 #include <mutex>
 #include <chrono>
@@ -45,10 +46,14 @@ int main()
 
     computation::FishProperties properties;
     properties.mass = 1.0f;
-    properties.maxForce = 0.0001f;
-    properties.maxSpeed = 0.002f;
-    properties.fieldOfView = 180.0f;
-    properties.viewDistance = 1.0f; // has to evenly divide the space
+    properties.maxForce = 0.00005f;
+    properties.maxSpeed = 0.001f;
+    properties.fieldOfViewCos = std::cos(180.0f / 2 * 3.14159 / 180);
+    properties.viewDistance = 0.3f;
+    properties.containmentWeight = 1.0f / 1000000.0f;
+    properties.alignmentWeight = 0.001f;
+    properties.cohesionWeight = 0.001f;
+    properties.separationWeight = 0.001f;
    
 
     graphics::Aquarium aquarium = graphics::Aquarium(view, proj);

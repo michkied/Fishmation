@@ -6,6 +6,7 @@ namespace computation {
     __global__ void assignFishToRegionsKernel(float* positions, int* fishIds, int* regionIndexes)
     {
         int i = blockIdx.x * blockDim.x + threadIdx.x;
+        if (i >= Config::SHOAL_SIZE) return;
         
         int xIndex = i;
         int yIndex = i + Config::SHOAL_SIZE;
@@ -23,13 +24,17 @@ namespace computation {
         int linearY = Config::REGION_DIM_COUNT / 2 - idY - (int)(idY < 0);
         int linearZ = Config::REGION_DIM_COUNT / 2 - idZ - (int)(idZ < 0);
 
-        regionIndexes[i] = linearX + linearY * Config::REGION_DIM_COUNT + linearZ * Config::REGION_DIM_COUNT * Config::REGION_DIM_COUNT;
+        int index = linearX + linearY * Config::REGION_DIM_COUNT + linearZ * Config::REGION_DIM_COUNT * Config::REGION_DIM_COUNT;
+        regionIndexes[i] = index;
+        regionIndexes[i + Config::SHOAL_SIZE] = index;  // this copy won't be sorted (for checking fish region in computeMoveKernel)
         fishIds[i] = i;
     }
 
     __global__ void findRegionStartsKernel(int* fishIds, int* regionIndexes, int* regionStarts) 
     {
         int i = blockIdx.x * blockDim.x + threadIdx.x;
+        if (i >= Config::SHOAL_SIZE) return;
+
 		if (i == 0) {
 			regionStarts[regionIndexes[i]] = 0;
 		}
@@ -38,9 +43,11 @@ namespace computation {
 		}
     }
 
-    __global__ void computeMoveKernel(float* positions, FishShoalVelocities* velocities, FishProperties* properties)
+    __global__ void computeMoveKernel(float* positions, FishShoalVelocities* velocities, FishProperties* properties, int* fishIds, int* regionIndexes, int* regionStarts, int* regionsCheatSheet)
     {
         int i = blockIdx.x * blockDim.x + threadIdx.x;
+        if (i >= Config::SHOAL_SIZE) return;
+
         int xIndex = i;
         int yIndex = i + Config::SHOAL_SIZE;
         int zIndex = i + Config::SHOAL_SIZE * 2;
@@ -53,26 +60,126 @@ namespace computation {
         float Vy = velocities->velocityY[i];
         float Vz = velocities->velocityZ[i];
 
-        float kF = 0.0001f;
+        int numOfNeighbors = 0;
 
-        float steeringX = 0.0f;
-        float steeringY = 0.0f;
-        float steeringZ = 0.0f;
+        float alignmentX = 0.0f;
+        float alignmentY = 0.0f;
+        float alignmentZ = 0.0f;
+
+        float cohesionX = 0.0f;
+        float cohesionY = 0.0f;
+        float cohesionZ = 0.0f;
+
+        float separationX = 0.0f;
+        float separationY = 0.0f;
+        float separationZ = 0.0f;
+
+        int regionIndex = regionIndexes[i + Config::SHOAL_SIZE];  // use the copy of regionIndexes that is not sorted to get the region of the current fish
+
+        // loop through neighboring regions
+        int regionIterator = 0;
+        int regionToCheck = regionsCheatSheet[regionIndex * 27 + regionIterator];
+        while (regionToCheck != -1)
+        {
+            // loop through fish in the region
+            int searchIndex = regionStarts[regionToCheck];
+            while (searchIndex < Config::SHOAL_SIZE && regionIndexes[searchIndex] == regionToCheck) {
+                int fishIndex = fishIds[searchIndex];
+                if (fishIndex == i) {
+                    searchIndex++;
+                    continue;
+                }
+
+                float Qx = positions[fishIndex];
+                float Qy = positions[fishIndex + Config::SHOAL_SIZE];
+                float Qz = positions[fishIndex + Config::SHOAL_SIZE * 2];
+
+                float distX = Qx - Px;
+                float distY = Qy - Py;
+                float distZ = Qz - Pz;
+
+                float dist = sqrt(distX * distX + distY * distY + distZ * distZ);
+                if (dist < 0.000001f) dist = 0.000001f;
+                if (dist > properties->viewDistance) {
+                    searchIndex++;
+                    continue;
+                }
+
+                float denom = sqrt(Vx * Vx + Vy * Vy + Vz * Vz) * dist;
+                if (denom < 0.000001f) denom = 0.000001f;
+                float cosAngle = (Vx * distX + Vy * distY + Vz * distZ) / denom;
+                if (cosAngle < properties->fieldOfViewCos) {
+                    searchIndex++;
+                    continue;
+                }
+
+                alignmentX += velocities->velocityX[fishIndex];
+                alignmentY += velocities->velocityY[fishIndex];
+                alignmentZ += velocities->velocityZ[fishIndex];
+
+                cohesionX += Qx;
+                cohesionY += Qy;
+                cohesionZ += Qz;
+
+                separationX += distX / dist;
+                separationY += distY / dist;
+                separationZ += distZ / dist;
+
+                numOfNeighbors++;
+                searchIndex++;
+            }
+
+
+            regionIterator++;
+            if (regionIterator == 27) break;
+            regionToCheck = regionsCheatSheet[regionIndex * 27 + regionIterator];
+		}
+
+        if (numOfNeighbors > 0) {
+            // Calculate alignment
+            alignmentX = (alignmentX / numOfNeighbors - Vx) * properties->alignmentWeight;
+            alignmentY = (alignmentY / numOfNeighbors - Vy) * properties->alignmentWeight;
+            alignmentZ = (alignmentZ / numOfNeighbors - Vz) * properties->alignmentWeight;
+
+            // Calculate cohesion
+            cohesionX = ((cohesionX / numOfNeighbors) - Px) * properties->cohesionWeight;
+            cohesionY = ((cohesionY / numOfNeighbors) - Py) * properties->cohesionWeight;
+            cohesionZ = ((cohesionZ / numOfNeighbors) - Pz) * properties->cohesionWeight;
+
+            // Calculate separation
+            separationX = separationX / numOfNeighbors * properties->separationWeight;
+            separationY = separationY / numOfNeighbors * properties->separationWeight;
+            separationZ = separationZ / numOfNeighbors * properties->separationWeight;
+		}
+
+        // Calculate containment
+        float containmentX = 0.0f;
+        float containmentY = 0.0f;
+        float containmentZ = 0.0f;
+
+        float kF = properties->containmentWeight;
 
         float dist1X = Config::AQUARIUM_SIZE / 2 - Px;
         float dist2X = -Config::AQUARIUM_SIZE / 2 - Px;
-        steeringX -= kF * kF / (dist1X * dist1X);
-        steeringX += kF * kF / (dist2X * dist2X);
+        containmentX -= kF / (dist1X * dist1X);
+        containmentX += kF / (dist2X * dist2X);
 
         float dist1Y = Config::AQUARIUM_SIZE / 2 - Py;
         float dist2Y = -Config::AQUARIUM_SIZE / 2 - Py;
-        steeringY -= kF * kF / (dist1Y * dist1Y);
-        steeringY += kF * kF / (dist2Y * dist2Y);
+        containmentY -= kF / (dist1Y * dist1Y);
+        containmentY += kF / (dist2Y * dist2Y);
 
         float dist1Z = Config::AQUARIUM_SIZE / 2 - Pz;
         float dist2Z = -Config::AQUARIUM_SIZE / 2 - Pz;
-        steeringZ -= kF * kF / (dist1Z * dist1Z);
-        steeringZ += kF * kF / (dist2Z * dist2Z);
+        containmentZ -= kF / (dist1Z * dist1Z);
+        containmentZ += kF / (dist2Z * dist2Z);
+
+        // Calculate net force
+        float steeringX = alignmentX + cohesionX + separationX + containmentX;
+        float steeringY = alignmentY + cohesionY + separationY + containmentY;
+        float steeringZ = alignmentZ + cohesionZ + separationZ + containmentZ;
+
+        __syncthreads();
 
         float steeringStrength = sqrt(steeringX * steeringX + steeringY * steeringY + steeringZ * steeringZ);
         if (steeringStrength != 0.0f) {
