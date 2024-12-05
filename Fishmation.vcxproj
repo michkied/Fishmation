@@ -90,7 +90,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <CudaCompile Include="src\computation\Behavior.cu" />
-    <CudaCompile Include="src\computation\Kernel.cu" />
+    <CudaCompile Include="src\computation\Kernels.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -100,7 +100,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\computation\Behavior.h" />
-    <ClInclude Include="include\computation\Kernel.h" />
+    <ClInclude Include="include\computation\Kernels.h" />
     <ClInclude Include="include\computation\types.h" />
     <ClInclude Include="include\graphics\Aquarium.hpp" />
     <ClInclude Include="include\Config.hpp" />

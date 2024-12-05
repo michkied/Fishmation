@@ -12,6 +12,7 @@
 #include "graphics/Shoal.hpp"
 #include "Config.hpp"
 #include "computation/Behavior.h"
+#include "computation/types.h"
 
 int main()
 {
@@ -30,9 +31,9 @@ int main()
     glEnable(GL_MULTISAMPLE);
 
     float shoalData[Config::SHOAL_SIZE * 3] = {
-            -0.9f, 0.0f, 0.5f,
-            -0.9f, 0.0f, 0.5f,
-            -0.9f, 0.0f, 0.5f
+            -0.9f, -0.91f, 0.0f, -0.5f, // x
+            -0.9f, -0.8f,  0.0f, 0.5f, // y
+            -0.9f, -0.5f,  0.0f, 0.5f  // z
     };
 
     glm::mat4 view = glm::lookAt(
@@ -42,9 +43,17 @@ int main()
     );
     glm::mat4 proj = glm::perspective(glm::radians(70.0f), 1920.0f / 1080.0f, 1.0f, 10.0f);
 
+    computation::FishProperties properties;
+    properties.mass = 1.0f;
+    properties.maxForce = 1.0f;
+    properties.maxSpeed = 0.005f;
+    properties.fieldOfView = 180.0f;
+    properties.viewDistance = 1.0f; // has to evenly divide the space
+   
+
     graphics::Aquarium aquarium = graphics::Aquarium(view, proj);
     graphics::Shoal shoal = graphics::Shoal(view, proj, shoalData);
-    computation::Behavior behavior = computation::Behavior(shoal.GetShoalBuffer());
+    computation::Behavior behavior = computation::Behavior(shoal.GetShoalBuffer(), properties);
 
     cudaError_t cudaStatus;
     auto t_start = std::chrono::high_resolution_clock::now();
@@ -68,8 +77,6 @@ int main()
         }
     }
 
-    // cudaDeviceReset must be called before exiting in order for profiling and
-    // tracing tools such as Nsight and Visual Profiler to show complete traces.
     cudaStatus = cudaDeviceReset();
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "cudaDeviceReset failed!");

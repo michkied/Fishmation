@@ -3,6 +3,7 @@
 #include "glad/glad.h"
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
+#include "types.h"
 #include <mutex>
 
 namespace computation
@@ -10,7 +11,7 @@ namespace computation
     class Behavior
     {
     public:
-        Behavior(GLuint shoalBuffer);
+        Behavior(GLuint shoalBuffer, FishProperties properties);
 		~Behavior();
 
         cudaError_t ComputeMove();
@@ -18,5 +19,12 @@ namespace computation
     private:
         GLuint _shoalBuffer;
         cudaGraphicsResource* _resource;
+
+        FishProperties* _propertiesDevice;
+        FishShoalVelocities* _velocitiesDevice;
+
+        int* _fishIdsDevice;
+        int* _regionIndexesDevice;
+        int* _regionStartsDevice;
     };
 }

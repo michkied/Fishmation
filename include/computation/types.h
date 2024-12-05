@@ -4,21 +4,17 @@
 namespace computation {
     struct FishProperties
     {
-        double mass;
-        double maxForce;
-        double maxSpeed;
-        double fieldOfView;
-        double viewDistance;
+        float mass;
+        float maxForce;
+        float maxSpeed;
+        float fieldOfView;
+        float viewDistance;
     };
 
-    struct FishShoal
+    struct FishShoalVelocities
     {
-        double positionX[Config::SHOAL_SIZE];
-        double positionY[Config::SHOAL_SIZE];
-        double positionZ[Config::SHOAL_SIZE];
-
-        double velocityX[Config::SHOAL_SIZE];
-        double velocityY[Config::SHOAL_SIZE];
-        double velocityZ[Config::SHOAL_SIZE];
+        float velocityX[Config::SHOAL_SIZE];
+        float velocityY[Config::SHOAL_SIZE];
+        float velocityZ[Config::SHOAL_SIZE];
     };
 }

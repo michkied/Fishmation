@@ -1,14 +1,16 @@
 ﻿#include "computation/Behavior.h"
-#include "computation/Kernel.h"
+#include "computation/Kernels.h"
 #include <stdio.h>
 #include <chrono>
 #include <thread>
 #include <cuda_gl_interop.h>
+#include <thrust/sort.h>
+#include <thrust/execution_policy.h>
 #include "Config.hpp"
 
 namespace computation {
 
-    Behavior::Behavior(GLuint shoalBuffer) : _shoalBuffer(shoalBuffer) {
+    Behavior::Behavior(GLuint shoalBuffer, FishProperties properties) : _shoalBuffer(shoalBuffer) { //TODO FREE
         cudaError_t cudaStatus;
 
         cudaStatus = cudaSetDevice(0);
@@ -22,6 +24,55 @@ namespace computation {
             fprintf(stderr, "cudaGraphicsGLRegisterBuffer failed!");
             return;
         }
+
+        // Allocate GPU buffers fo fish properties
+        cudaStatus = cudaMalloc(&_propertiesDevice, sizeof(FishProperties));
+        if (cudaStatus != cudaSuccess) {
+			fprintf(stderr, "cudaMalloc failed!");
+			return;
+		}
+        cudaStatus = cudaMemcpy(_propertiesDevice, &properties, sizeof(FishProperties), cudaMemcpyHostToDevice);
+        if (cudaStatus != cudaSuccess) {
+            fprintf(stderr, "cudaMemcpy failed!");
+            return;
+        }
+
+        // Allocate GPU buffers for fish velocities
+        cudaStatus = cudaMalloc(&_velocitiesDevice, sizeof(FishShoalVelocities));
+        if (cudaStatus != cudaSuccess) {
+            fprintf(stderr, "cudaMalloc failed!");
+            return;
+        }
+        FishShoalVelocities velocities;
+        std::fill(velocities.velocityX, velocities.velocityX + Config::SHOAL_SIZE, 0.0f);
+        std::fill(velocities.velocityY, velocities.velocityY + Config::SHOAL_SIZE, 0.0f);
+        std::fill(velocities.velocityZ, velocities.velocityZ + Config::SHOAL_SIZE, 0.0f);
+        cudaStatus = cudaMemcpy(_velocitiesDevice, &velocities, sizeof(FishShoalVelocities), cudaMemcpyHostToDevice);
+        if (cudaStatus != cudaSuccess) {
+            fprintf(stderr, "cudaMemcpy failed!");
+            return;
+        }
+
+        // Allocate GPU buffers for fish ids
+        cudaStatus = cudaMalloc(&_fishIdsDevice, Config::SHOAL_SIZE * sizeof(int));
+        if (cudaStatus != cudaSuccess) {
+			fprintf(stderr, "cudaMalloc failed!");
+			return;
+		}
+
+        // Allocate GPU buffers for region indexes
+		cudaStatus = cudaMalloc(&_regionIndexesDevice, Config::SHOAL_SIZE * sizeof(int));
+        if (cudaStatus != cudaSuccess) {
+            fprintf(stderr, "cudaMalloc failed!");
+            return;
+        }
+
+        // Allocate GPU buffers for region starts
+        cudaStatus = cudaMalloc(&_regionStartsDevice, Config::REGION_DIM_COUNT * Config::REGION_DIM_COUNT * Config::REGION_DIM_COUNT * sizeof(int));
+        if (cudaStatus != cudaSuccess) {
+			fprintf(stderr, "cudaMalloc failed!");
+			return;
+		}
     }
 
     Behavior::~Behavior() {}
@@ -36,34 +87,55 @@ namespace computation {
             return cudaStatus;
         }
 
-        void* dev_ptr;
+        void* positions_dev;
         size_t size;
-        cudaStatus = cudaGraphicsResourceGetMappedPointer(&dev_ptr, &size, _resource);
+        cudaStatus = cudaGraphicsResourceGetMappedPointer(&positions_dev, &size, _resource);
         if (cudaStatus != cudaSuccess) {
             fprintf(stderr, "cudaGraphicsResourceGetMappedPointer failed!");
             return cudaStatus;
         }
 
-        // Launch a kernel on the GPU with one thread for each element.
-        computeMoveKernel << <1, Config::SHOAL_SIZE >> > ((float*)dev_ptr);
+        assignFishToRegionsKernel << <1, Config::SHOAL_SIZE >> > ((float*)positions_dev, _fishIdsDevice, _regionIndexesDevice);
+        thrust::sort_by_key(thrust::device, _regionIndexesDevice, _regionIndexesDevice + Config::SHOAL_SIZE, _fishIdsDevice);
+        findRegionStartsKernel << <1, Config::SHOAL_SIZE >> > (_fishIdsDevice, _regionIndexesDevice, _regionStartsDevice);
 
-        // Check for any errors launching the kernel
+        computeMoveKernel << <1, Config::SHOAL_SIZE >> > ((float*)positions_dev, _velocitiesDevice, _propertiesDevice);
+
         cudaStatus = cudaGetLastError();
         if (cudaStatus != cudaSuccess) {
             fprintf(stderr, "addKernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
             return cudaStatus;
         }
 
-        // cudaDeviceSynchronize waits for the kernel to finish, and returns
-        // any errors encountered during the launch.
         cudaStatus = cudaDeviceSynchronize();
         if (cudaStatus != cudaSuccess) {
             fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching addKernel!\n", cudaStatus);
             return cudaStatus;
         }
 
-        float output[Config::SHOAL_SIZE * 3];
-        cudaStatus = cudaMemcpy(output, dev_ptr, size, cudaMemcpyDeviceToHost);
+        //float output[Config::SHOAL_SIZE * 3];
+        //cudaStatus = cudaMemcpy(output, positions_dev, size, cudaMemcpyDeviceToHost);
+        //if (cudaStatus != cudaSuccess) {
+        //    fprintf(stderr, "cudaMemcpy failed!");
+        //    return cudaStatus;
+        //}
+
+        int output[Config::SHOAL_SIZE];
+        cudaStatus = cudaMemcpy(output, _regionIndexesDevice, Config::SHOAL_SIZE * sizeof(int), cudaMemcpyDeviceToHost);
+        if (cudaStatus != cudaSuccess) {
+            fprintf(stderr, "cudaMemcpy failed!");
+            return cudaStatus;
+        }
+
+        int output2[Config::SHOAL_SIZE];
+        cudaStatus = cudaMemcpy(output2, _fishIdsDevice, Config::SHOAL_SIZE * sizeof(int), cudaMemcpyDeviceToHost);
+        if (cudaStatus != cudaSuccess) {
+            fprintf(stderr, "cudaMemcpy failed!");
+            return cudaStatus;
+        }
+
+        int output3[Config::REGION_DIM_COUNT * Config::REGION_DIM_COUNT * Config::REGION_DIM_COUNT];
+        cudaStatus = cudaMemcpy(output3, _regionStartsDevice, Config::REGION_DIM_COUNT * Config::REGION_DIM_COUNT * Config::REGION_DIM_COUNT * sizeof(int), cudaMemcpyDeviceToHost);
         if (cudaStatus != cudaSuccess) {
             fprintf(stderr, "cudaMemcpy failed!");
             return cudaStatus;
