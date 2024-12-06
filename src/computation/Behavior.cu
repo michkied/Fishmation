@@ -44,9 +44,9 @@ namespace computation {
             return;
         }
         FishShoalVelocities velocities;
-        std::fill(velocities.velocityX, velocities.velocityX + Config::SHOAL_SIZE, 0.01f);
-        std::fill(velocities.velocityY, velocities.velocityY + Config::SHOAL_SIZE, 0.01f);
-        std::fill(velocities.velocityZ, velocities.velocityZ + Config::SHOAL_SIZE, 0.01f);
+        std::fill(velocities.velocityX, velocities.velocityX + Config::SHOAL_SIZE, 0.001f);
+        std::fill(velocities.velocityY, velocities.velocityY + Config::SHOAL_SIZE, 0.001f);
+        std::fill(velocities.velocityZ, velocities.velocityZ + Config::SHOAL_SIZE, 0.001f);
         cudaStatus = cudaMemcpy(_velocitiesDevice, &velocities, sizeof(FishShoalVelocities), cudaMemcpyHostToDevice);
         if (cudaStatus != cudaSuccess) {
             fprintf(stderr, "cudaMemcpy failed!");
@@ -73,13 +73,6 @@ namespace computation {
 			fprintf(stderr, "cudaMalloc failed!");
 			return;
 		}
-
-        // Allocate GPU buffers for regions cheat sheet
-        cudaStatus = cudaMalloc(&_regionsCheatSheetDevice, Config::REGION_COUNT * 27 * sizeof(int));
-        if (cudaStatus != cudaSuccess) {
-            fprintf(stderr, "cudaMalloc failed!");
-            return;
-        }
 
         cudaStatus = ComputeRegionsCheatSheet();
         if (cudaStatus != cudaSuccess) {

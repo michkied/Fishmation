@@ -111,6 +111,7 @@ namespace computation {
         float separationX = 0.0f;
         float separationY = 0.0f;
         float separationZ = 0.0f;
+        float weightSum = 0.0f;
 
         int regionIndex = regionIndexes[i + Config::SHOAL_SIZE];  // use the copy of regionIndexes that is not sorted to get the region of the current fish
 
@@ -159,9 +160,10 @@ namespace computation {
                 cohesionY += Qy;
                 cohesionZ += Qz;
 
-                separationX += distX / dist;
-                separationY += distY / dist;
-                separationZ += distZ / dist;
+                separationX += -distX / dist;
+                separationY += -distY / dist;
+                separationZ += -distZ / dist;
+                weightSum += 1.0f / dist;
 
                 numOfNeighbors++;
                 searchIndex++;
@@ -174,19 +176,40 @@ namespace computation {
 
         if (numOfNeighbors > 0) {
             // Calculate alignment
-            alignmentX = (alignmentX / numOfNeighbors - Vx) * properties->alignmentWeight;
-            alignmentY = (alignmentY / numOfNeighbors - Vy) * properties->alignmentWeight;
-            alignmentZ = (alignmentZ / numOfNeighbors - Vz) * properties->alignmentWeight;
+            alignmentX = (alignmentX / numOfNeighbors - Vx);
+            alignmentY = (alignmentY / numOfNeighbors - Vy);
+            alignmentZ = (alignmentZ / numOfNeighbors - Vz);
+
+            float alignment = sqrt(alignmentX * alignmentX + alignmentY * alignmentY + alignmentZ * alignmentZ);
+            if (alignment > 0.0f) {
+				alignmentX = alignmentX / alignment * properties->alignmentWeight;
+				alignmentY = alignmentY / alignment * properties->alignmentWeight;
+				alignmentZ = alignmentZ / alignment * properties->alignmentWeight;
+			}
 
             // Calculate cohesion
-            cohesionX = ((cohesionX / numOfNeighbors) - Px) * properties->cohesionWeight;
-            cohesionY = ((cohesionY / numOfNeighbors) - Py) * properties->cohesionWeight;
-            cohesionZ = ((cohesionZ / numOfNeighbors) - Pz) * properties->cohesionWeight;
+            cohesionX = ((cohesionX / numOfNeighbors) - Px);
+            cohesionY = ((cohesionY / numOfNeighbors) - Py);
+            cohesionZ = ((cohesionZ / numOfNeighbors) - Pz);
+
+            float cohesion = sqrt(cohesionX * cohesionX + cohesionY * cohesionY + cohesionZ * cohesionZ);
+            if (cohesion > 0.0f) {
+				cohesionX = cohesionX / cohesion * properties->cohesionWeight;
+				cohesionY = cohesionY / cohesion * properties->cohesionWeight;
+				cohesionZ = cohesionZ / cohesion * properties->cohesionWeight;
+			}
 
             // Calculate separation
-            separationX = separationX / numOfNeighbors * properties->separationWeight;
-            separationY = separationY / numOfNeighbors * properties->separationWeight;
-            separationZ = separationZ / numOfNeighbors * properties->separationWeight;
+            separationX = separationX / weightSum;
+            separationY = separationY / weightSum;
+            separationZ = separationZ / weightSum;
+
+            float separation = sqrt(separationX * separationX + separationY * separationY + separationZ * separationZ);
+            if (separation > 0.0f) {
+                separationX = separationX / separation * properties->separationWeight;
+                separationY = separationY / separation * properties->separationWeight;
+                separationZ = separationZ / separation * properties->separationWeight;
+            }
 		}
 
         // Calculate containment
@@ -212,21 +235,21 @@ namespace computation {
         containmentZ += kF / (dist2Z * dist2Z);
 
         // Calculate net force
-        float steeringX = alignmentX + cohesionX + separationX + containmentX;
-        float steeringY = alignmentY + cohesionY + separationY + containmentY;
-        float steeringZ = alignmentZ + cohesionZ + separationZ + containmentZ;
+        float FSx = alignmentX + cohesionX + separationX + containmentX;
+        float FSy = alignmentY + cohesionY + separationY + containmentY;
+        float FSz = alignmentZ + cohesionZ + separationZ + containmentZ;
 
-        float steeringStrength = sqrt(steeringX * steeringX + steeringY * steeringY + steeringZ * steeringZ);
-        if (steeringStrength != 0.0f) {
-            float clampedSteeringStrength = steeringStrength > properties->maxForce ? properties->maxForce : steeringStrength;
+        float force = sqrt(FSx * FSx + FSy * FSy + FSz * FSz);
+        if (force != 0.0f) {
+            float clampedFroce = force > properties->maxForce ? properties->maxForce : force;
 
-            float FsX = steeringX * clampedSteeringStrength / steeringStrength;
-            float FsY = steeringY * clampedSteeringStrength / steeringStrength;
-            float FsZ = steeringZ * clampedSteeringStrength / steeringStrength;
+            float Fx = FSx * clampedFroce / force;
+            float Fy = FSy * clampedFroce / force;
+            float Fz = FSz * clampedFroce / force;
 
-            float aX = FsX / properties->mass;
-            float aY = FsY / properties->mass;
-            float aZ = FsZ / properties->mass;
+            float aX = Fx / properties->mass;
+            float aY = Fy / properties->mass;
+            float aZ = Fz / properties->mass;
 
             Vx += aX;
             Vy += aY;

@@ -34,7 +34,7 @@ int main()
 
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::normal_distribution<float> distribution(0.0f, 1.0f);
+    std::normal_distribution<float> distribution(0.0f, 0.5f);
 
     float* shoalData = new float[Config::SHOAL_SIZE * 3];
     for (int i = 0; i < Config::SHOAL_SIZE * 3; i++) {
@@ -53,14 +53,14 @@ int main()
 
     computation::FishProperties properties;
     properties.mass = 1.0f;
-    properties.maxForce = 0.0005f;
+    properties.maxForce = 0.0001f;
     properties.maxSpeed = 0.001f;
     properties.fieldOfViewCos = std::cos(180.0f / 2 * 3.14159 / 180);
     properties.viewDistance = 0.05f;
-    properties.containmentWeight = 1.0f / 100000.0f;
-    properties.alignmentWeight = 0.0001f;
-    properties.cohesionWeight = 0.0001f;
-    properties.separationWeight = 0.000001f;
+    properties.containmentWeight = 1.0f / 10000000.0f;
+    properties.alignmentWeight = 0.01f;
+    properties.cohesionWeight = 0.001f;
+    properties.separationWeight = 0.01f;
    
 
     graphics::Aquarium aquarium = graphics::Aquarium(view, proj);
