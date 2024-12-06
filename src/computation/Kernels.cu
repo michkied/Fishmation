@@ -182,9 +182,10 @@ namespace computation {
 
             float alignment = sqrt(alignmentX * alignmentX + alignmentY * alignmentY + alignmentZ * alignmentZ);
             if (alignment > 0.0f) {
-				alignmentX = alignmentX / alignment * properties->alignmentWeight;
-				alignmentY = alignmentY / alignment * properties->alignmentWeight;
-				alignmentZ = alignmentZ / alignment * properties->alignmentWeight;
+                float kA = properties->alignmentWeight * Config::ALIGNMENT_SCALE;
+				alignmentX = alignmentX / alignment * kA;
+				alignmentY = alignmentY / alignment * kA;
+				alignmentZ = alignmentZ / alignment * kA;
 			}
 
             // Calculate cohesion
@@ -194,9 +195,10 @@ namespace computation {
 
             float cohesion = sqrt(cohesionX * cohesionX + cohesionY * cohesionY + cohesionZ * cohesionZ);
             if (cohesion > 0.0f) {
-				cohesionX = cohesionX / cohesion * properties->cohesionWeight;
-				cohesionY = cohesionY / cohesion * properties->cohesionWeight;
-				cohesionZ = cohesionZ / cohesion * properties->cohesionWeight;
+                float kC = properties->cohesionWeight * Config::COHESION_SCALE;
+				cohesionX = cohesionX / cohesion * kC;
+				cohesionY = cohesionY / cohesion * kC;
+				cohesionZ = cohesionZ / cohesion * kC;
 			}
 
             // Calculate separation
@@ -206,9 +208,10 @@ namespace computation {
 
             float separation = sqrt(separationX * separationX + separationY * separationY + separationZ * separationZ);
             if (separation > 0.0f) {
-                separationX = separationX / separation * properties->separationWeight;
-                separationY = separationY / separation * properties->separationWeight;
-                separationZ = separationZ / separation * properties->separationWeight;
+                float kS = properties->separationWeight * Config::SEPARATION_SCALE;
+                separationX = separationX / separation * kS;
+                separationY = separationY / separation * kS;
+                separationZ = separationZ / separation * kS;
             }
 		}
 
@@ -217,7 +220,7 @@ namespace computation {
         float containmentY = 0.0f;
         float containmentZ = 0.0f;
 
-        float kF = properties->containmentWeight;
+        float kF = properties->containmentWeight * Config::CONTAINMENT_SCALE;
 
         float dist1X = Config::AQUARIUM_SIZE / 2 - Px;
         float dist2X = Config::AQUARIUM_SIZE / 2 + Px;
@@ -297,19 +300,19 @@ namespace computation {
         }
 
         float newPx = Px + Vx;
-        if (Config::AQUARIUM_SIZE / 2 - newPx < 0 || Config::AQUARIUM_SIZE / 2 - newPx > 2) 
+        if (Config::AQUARIUM_SIZE / 2 - newPx < 0.001 || Config::AQUARIUM_SIZE / 2 - newPx > 1.999) 
         {
 			Vx = 0;
 		}
 
         float newPy = Py + Vy;
-        if (Config::AQUARIUM_SIZE / 2 - newPy < 0 || Config::AQUARIUM_SIZE / 2 - newPy > 2) 
+        if (Config::AQUARIUM_SIZE / 2 - newPy < 0.001 || Config::AQUARIUM_SIZE / 2 - newPy > 1.999) 
 		{
             Vy = 0;
         }
 
         float newPz = Pz + Vz;
-        if (Config::AQUARIUM_SIZE / 2 - newPz < 0 || Config::AQUARIUM_SIZE / 2 - newPz > 2)
+        if (Config::AQUARIUM_SIZE / 2 - newPz < 0.001 || Config::AQUARIUM_SIZE / 2 - newPz > 1.999)
         {
 			Vz = 0;
 		}
@@ -340,19 +343,19 @@ namespace computation {
         float Vz = velocities->velocityZ[i];
 
         float newPx = Px + Vx;
-        if (Config::AQUARIUM_SIZE / 2 - newPx < 0 || Config::AQUARIUM_SIZE / 2 - newPx > 2)
+        if (Config::AQUARIUM_SIZE / 2 - newPx < 0.001 || Config::AQUARIUM_SIZE / 2 - newPx > 1.999)
         {
             Vx = -Vx;
         }
 
         float newPy = Py + Vy;
-        if (Config::AQUARIUM_SIZE / 2 - newPy < 0 || Config::AQUARIUM_SIZE / 2 - newPy > 2)
+        if (Config::AQUARIUM_SIZE / 2 - newPy < 0.001 || Config::AQUARIUM_SIZE / 2 - newPy > 1.999)
         {
             Vy = -Vy;
         }
 
         float newPz = Pz + Vz;
-        if (Config::AQUARIUM_SIZE / 2 - newPz < 0 || Config::AQUARIUM_SIZE / 2 - newPz > 2)
+        if (Config::AQUARIUM_SIZE / 2 - newPz < 0.001 || Config::AQUARIUM_SIZE / 2 - newPz > 1.999)
         {
             Vz = -Vz;
         }

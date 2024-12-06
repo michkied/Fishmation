@@ -11,7 +11,7 @@
 
 namespace computation {
 
-    Behavior::Behavior(GLuint shoalBuffer, FishProperties& properties) : _shoalBuffer(shoalBuffer), _propertiesHost(properties) { //TODO FREE
+    Behavior::Behavior(GLuint shoalBuffer, FishProperties& properties) : _shoalBuffer(shoalBuffer), _propertiesHost(properties) {
         cudaError_t cudaStatus;
 
         cudaStatus = cudaSetDevice(0);
@@ -75,12 +75,14 @@ namespace computation {
 			return;
 		}
 
+        // Precompute lookup table for neighboring regions
         cudaStatus = ComputeRegionsCheatSheet();
         if (cudaStatus != cudaSuccess) {
             fprintf(stderr, "ComputeRegionsCheatSheet failed!");
             return;
         }
 
+        // Allocate GPU buffers for predator velocities
         cudaStatus = cudaMalloc(&_predatorVelocitiesDevice, sizeof(PredatorVelocities));
         if (cudaStatus != cudaSuccess) {
             fprintf(stderr, "cudaMalloc failed!");
@@ -110,6 +112,11 @@ namespace computation {
 		cudaFree(_regionStartsDevice);
 		cudaFree(_regionsCheatSheetDevice);
         cudaFree(_predatorVelocitiesDevice);
+
+        cudaError_t cudaStatus = cudaDeviceReset();
+        if (cudaStatus != cudaSuccess) {
+            fprintf(stderr, "cudaDeviceReset failed!");
+        }
     }
 
     cudaError_t Behavior::ComputeRegionsCheatSheet()
@@ -126,13 +133,13 @@ namespace computation {
 
         cudaStatus = cudaGetLastError();
         if (cudaStatus != cudaSuccess) {
-            fprintf(stderr, "addKernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
+            fprintf(stderr, "computeRegionsCheatSheetKernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
             return cudaStatus;
         }
 
         cudaStatus = cudaDeviceSynchronize();
         if (cudaStatus != cudaSuccess) {
-            fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching addKernel!\n", cudaStatus);
+            fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching computeRegionsCheatSheetKernel!\n", cudaStatus);
             return cudaStatus;
         }
 
@@ -168,22 +175,52 @@ namespace computation {
 
         // Assign fish to regions
         assignFishToRegionsKernel<<< Config::SHOAL_SIZE / Config::THREADS_PER_BLOCK + 1, Config::THREADS_PER_BLOCK >>>((float*)positions_dev, _fishIdsDevice, _regionIndexesDevice);
-        thrust::sort_by_key(thrust::device, _regionIndexesDevice, _regionIndexesDevice + Config::SHOAL_SIZE, _fishIdsDevice);
-        findRegionStartsKernel<<< Config::SHOAL_SIZE / Config::THREADS_PER_BLOCK + 1, Config::THREADS_PER_BLOCK >>>(_fishIdsDevice, _regionIndexesDevice, _regionStartsDevice);
-
-        // Compute shoal movement
-        computeShoalMoveKernel<<< Config::SHOAL_SIZE / Config::THREADS_PER_BLOCK + 1, Config::THREADS_PER_BLOCK >>>((float*)positions_dev, _velocitiesDevice, _propertiesDevice, _fishIdsDevice, _regionIndexesDevice, _regionStartsDevice, _regionsCheatSheetDevice);
-        computePredatorMoveKernel << < Config::PREDATOR_COUNT / Config::THREADS_PER_BLOCK + 1, Config::THREADS_PER_BLOCK >> >((float*)positions_dev, _predatorVelocitiesDevice);
-
         cudaStatus = cudaGetLastError();
         if (cudaStatus != cudaSuccess) {
-            fprintf(stderr, "addKernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
+            fprintf(stderr, "assignFishToRegionsKernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
+            return cudaStatus;
+        }
+        cudaStatus = cudaDeviceSynchronize();
+        if (cudaStatus != cudaSuccess) {
+            fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching assignFishToRegionsKernel!\n", cudaStatus);
+            return cudaStatus;
+        }
+        thrust::sort_by_key(thrust::device, _regionIndexesDevice, _regionIndexesDevice + Config::SHOAL_SIZE, _fishIdsDevice);
+        findRegionStartsKernel<<< Config::SHOAL_SIZE / Config::THREADS_PER_BLOCK + 1, Config::THREADS_PER_BLOCK >>>(_fishIdsDevice, _regionIndexesDevice, _regionStartsDevice);
+        cudaStatus = cudaGetLastError();
+        if (cudaStatus != cudaSuccess) {
+            fprintf(stderr, "findRegionStartsKernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
+            return cudaStatus;
+        }
+        cudaStatus = cudaDeviceSynchronize();
+        if (cudaStatus != cudaSuccess) {
+            fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching findRegionStartsKernel!\n", cudaStatus);
             return cudaStatus;
         }
 
+        // Compute shoal movement
+        computeShoalMoveKernel<<< Config::SHOAL_SIZE / Config::THREADS_PER_BLOCK + 1, Config::THREADS_PER_BLOCK >>>((float*)positions_dev, _velocitiesDevice, _propertiesDevice, _fishIdsDevice, _regionIndexesDevice, _regionStartsDevice, _regionsCheatSheetDevice);
+        cudaStatus = cudaGetLastError();
+        if (cudaStatus != cudaSuccess) {
+            fprintf(stderr, "computeShoalMoveKernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
+            return cudaStatus;
+        }
         cudaStatus = cudaDeviceSynchronize();
         if (cudaStatus != cudaSuccess) {
-            fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching addKernel!\n", cudaStatus);
+            fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching computeShoalMoveKernel!\n", cudaStatus);
+            return cudaStatus;
+        }
+
+        // Compute predator movement
+        computePredatorMoveKernel << < Config::PREDATOR_COUNT / Config::THREADS_PER_BLOCK + 1, Config::THREADS_PER_BLOCK >> >((float*)positions_dev, _predatorVelocitiesDevice);
+        cudaStatus = cudaGetLastError();
+        if (cudaStatus != cudaSuccess) {
+            fprintf(stderr, "computePredatorMoveKernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
+            return cudaStatus;
+        }
+        cudaStatus = cudaDeviceSynchronize();
+        if (cudaStatus != cudaSuccess) {
+            fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching computePredatorMoveKernel!\n", cudaStatus);
             return cudaStatus;
         }
 

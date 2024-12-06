@@ -31,32 +31,26 @@ namespace graphics {
 			_fishProperties.changeCounter++;
 		}
 
-        ImGui::Text("Predator avoidance");
-		ImGui::SliderFloat("##predator", &_fishProperties.predatorAvoidanceWeight, 0.0f, 0.01f, "%.5f");
-		if (ImGui::IsItemActive()) {
-			_fishProperties.changeCounter++;
-		}
-
 		ImGui::Text("Containment");
-		ImGui::SliderFloat("##containment", &_fishProperties.containmentWeight, 0.0f, 0.01f, "%.5f");
+		ImGui::SliderFloat("##containment", &_fishProperties.containmentWeight, 0.0f, 100.0f, "%.1f");
 		if (ImGui::IsItemActive()) {
 			_fishProperties.changeCounter++;
 		}
 
 		ImGui::Text("Alignment");
-		ImGui::SliderFloat("##alignment", &_fishProperties.alignmentWeight, 0.0f, 0.01f, "%.5f");
+		ImGui::SliderFloat("##alignment", &_fishProperties.alignmentWeight, 0.0f, 100.0f, "%.1f");
 		if (ImGui::IsItemActive()) {
 			_fishProperties.changeCounter++;
 		}
 
 		ImGui::Text("Cohesion");
-		ImGui::SliderFloat("##cohesion", &_fishProperties.cohesionWeight, 0.0f, 0.01f, "%.5f");
+		ImGui::SliderFloat("##cohesion", &_fishProperties.cohesionWeight, 0.0f, 100.0f, "%.1f");
 		if (ImGui::IsItemActive()) {
 			_fishProperties.changeCounter++;
 		}
 
 		ImGui::Text("Separation");
-		ImGui::SliderFloat("##separation", &_fishProperties.separationWeight, 0.0f, 0.01f, "%.5f");
+		ImGui::SliderFloat("##separation", &_fishProperties.separationWeight, 0.0f, 100.0f, "%.1f");
 		if (ImGui::IsItemActive()) {
 			_fishProperties.changeCounter++;
 		}
@@ -65,19 +59,5 @@ namespace graphics {
 
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-        //// Start ImGui frame
-        //ImGui_ImplOpenGL3_NewFrame();
-        //ImGui_ImplGlfw_NewFrame();
-        //ImGui::NewFrame();
-
-
-
-        //// Render ImGui
-        //ImGui::Render();
-        //int display_w, display_h;
-        //glfwGetFramebufferSize(window, &display_w, &display_h);
-        //glViewport(0, 0, display_w, display_h);
-        //ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 	}
 }

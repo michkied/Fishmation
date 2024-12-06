@@ -6,7 +6,7 @@ namespace Config {
 	constexpr int SHOAL_SIZE = 10000;
 	constexpr int PREDATOR_COUNT = 5;
 	constexpr float AQUARIUM_SIZE = 2.0f;
-	constexpr float REGION_SIZE = 0.05f;
+	constexpr float REGION_SIZE = 0.01f;
 
 	constexpr float FISH_POINT_SIZE = 2.0f;
 	constexpr float PREDATOR_POINT_SIZE = 5.0f;
@@ -15,6 +15,11 @@ namespace Config {
 
 	constexpr float PREDATOR_MAX_SPEED = 0.001f;
 	constexpr float PREDATOR_MIN_SPEED = 0.0007f;
+
+	constexpr float CONTAINMENT_SCALE = 1.0f / 30000000;
+	constexpr float ALIGNMENT_SCALE = 1.0f;
+	constexpr float COHESION_SCALE = 1.0f / 2;
+	constexpr float SEPARATION_SCALE = 1.0f;
 
 	constexpr int FISH_COUNT = SHOAL_SIZE + PREDATOR_COUNT;
 	constexpr int REGION_DIM_COUNT = (int)(AQUARIUM_SIZE / REGION_SIZE);
