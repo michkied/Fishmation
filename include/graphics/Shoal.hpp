@@ -35,5 +35,6 @@ namespace graphics
 
 		GLint _uniColor;
 		GLint _uniModel;
+		GLint _uniSize;
 	};
 }

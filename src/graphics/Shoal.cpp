@@ -14,7 +14,7 @@ namespace graphics
 
         glGenBuffers(1, &_vbo);
         glBindBuffer(GL_ARRAY_BUFFER, _vbo);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * Config::SHOAL_SIZE * 3, shoalData, GL_STREAM_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * Config::FISH_COUNT * 3, shoalData, GL_STREAM_DRAW);
 
         CompileShaders();
 
@@ -25,20 +25,19 @@ namespace graphics
         glUniformMatrix4fv(uniProj, 1, GL_FALSE, glm::value_ptr(proj));
 
         _uniModel = glGetUniformLocation(_shaderProgram, "model");
-
         _uniColor = glGetUniformLocation(_shaderProgram, "color");
-        glUniform4f(_uniColor, 0.5f, 0.5f, 1.0f, 1.0f);
+        _uniSize = glGetUniformLocation(_shaderProgram, "size");
 
         GLint posXAttrib = glGetAttribLocation(_shaderProgram, "posX");
         glVertexAttribPointer(posXAttrib, 1, GL_FLOAT, GL_FALSE, 0, 0);
         glEnableVertexAttribArray(posXAttrib);
 
         GLint posYAttrib = glGetAttribLocation(_shaderProgram, "posY");
-        glVertexAttribPointer(posYAttrib, 1, GL_FLOAT, GL_FALSE, 0, (GLvoid*)(sizeof(GLfloat) * Config::SHOAL_SIZE));
+        glVertexAttribPointer(posYAttrib, 1, GL_FLOAT, GL_FALSE, 0, (GLvoid*)(sizeof(GLfloat) * Config::FISH_COUNT));
         glEnableVertexAttribArray(posYAttrib);
 
         GLint posZAttrib = glGetAttribLocation(_shaderProgram, "posZ");
-        glVertexAttribPointer(posZAttrib, 1, GL_FLOAT, GL_FALSE, 0, (GLvoid*)(sizeof(GLfloat) * Config::SHOAL_SIZE * 2));
+        glVertexAttribPointer(posZAttrib, 1, GL_FLOAT, GL_FALSE, 0, (GLvoid*)(sizeof(GLfloat) * Config::FISH_COUNT * 2));
         glEnableVertexAttribArray(posZAttrib);
     }
 
@@ -78,6 +77,7 @@ namespace graphics
             uniform mat4 model;
             uniform mat4 view;
             uniform mat4 proj;
+            uniform float size;
 
             in float posX;
             in float posY;
@@ -86,7 +86,7 @@ namespace graphics
             void main()
             {
                 gl_Position = proj * view * model * vec4(posX, posY, posZ, 1.0);
-                gl_PointSize = 2.0;
+                gl_PointSize = size;
             }
         )glsl";
 
@@ -191,6 +191,12 @@ namespace graphics
 
         glUniformMatrix4fv(_uniModel, 1, GL_FALSE, glm::value_ptr(model));
 
+        glUniform1f(_uniSize, Config::FISH_POINT_SIZE);
+        glUniform4f(_uniColor, 0.5f, 0.5f, 1.0f, 1.0f);
         glDrawArrays(GL_POINTS, 0, Config::SHOAL_SIZE);
+
+        glUniform1f(_uniSize, Config::PREDATOR_POINT_SIZE);
+        glUniform4f(_uniColor, 1.0f, 0.0f, 0.0f, 1.0f);
+        glDrawArrays(GL_POINTS, Config::SHOAL_SIZE, Config::PREDATOR_COUNT);
     }
 }

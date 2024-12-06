@@ -7,6 +7,7 @@
 #include <mutex>
 #include <chrono>
 #include <random>
+#include <sstream>
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
 
@@ -15,6 +16,28 @@
 #include "Config.hpp"
 #include "computation/Behavior.h"
 #include "computation/types.h"
+
+void update_fps_counter(GLFWwindow* window) {
+    static double previous_seconds = glfwGetTime();
+    static int frame_count = 0;
+
+    double current_seconds = glfwGetTime();
+    double elapsed_seconds = current_seconds - previous_seconds;
+
+    if (elapsed_seconds > 1.0) {
+        previous_seconds = current_seconds;
+        double fps = (double)frame_count / elapsed_seconds;
+
+        std::ostringstream oss;
+        oss.precision(2);
+        oss << std::fixed << "Fishmation - FPS: " << fps;
+        glfwSetWindowTitle(window, oss.str().c_str());
+
+        frame_count = 0;
+    }
+
+    frame_count++;
+}
 
 int main()
 {
@@ -36,8 +59,8 @@ int main()
     std::mt19937 gen(rd());
     std::normal_distribution<float> distribution(0.0f, 0.5f);
 
-    float* shoalData = new float[Config::SHOAL_SIZE * 3];
-    for (int i = 0; i < Config::SHOAL_SIZE * 3; i++) {
+    float* shoalData = new float[Config::FISH_COUNT * 3];
+    for (int i = 0; i < Config::FISH_COUNT * 3; i++) {
         float random_number;
         do { random_number = distribution(gen); } 
         while (random_number < -0.9f || random_number > 0.9f);
@@ -55,13 +78,15 @@ int main()
     properties.mass = 1.0f;
     properties.maxForce = 0.0001f;
     properties.maxSpeed = 0.001f;
-    properties.fieldOfViewCos = std::cos(180.0f / 2 * 3.14159 / 180);
-    properties.viewDistance = 0.05f;
+    properties.fieldOfViewCos = (float)std::cos(180.0f / 2 * 3.14159 / 180);
+    properties.viewDistance = Config::REGION_SIZE;
+    properties.predatorViewDistance = Config::REGION_SIZE * 7;
+
     properties.containmentWeight = 1.0f / 10000000.0f;
     properties.alignmentWeight = 0.01f;
     properties.cohesionWeight = 0.001f;
-    properties.separationWeight = 0.01f;
-   
+    properties.separationWeight = 0.005f;
+    properties.predatorAvoidanceWeight = 5.0f;
 
     graphics::Aquarium aquarium = graphics::Aquarium(view, proj);
     graphics::Shoal shoal = graphics::Shoal(view, proj, shoalData);
@@ -87,6 +112,8 @@ int main()
             fprintf(stderr, "ComputeMove failed!");
             return 1;
         }
+
+        update_fps_counter(window);
     }
 
     cudaStatus = cudaDeviceReset();

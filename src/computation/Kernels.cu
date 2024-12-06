@@ -41,14 +41,24 @@ namespace computation {
         }
 	}
 
+    __global__ void setupPredatorRandomnessKernel(curandState* state, PredatorVelocities* velocities)
+    {
+        int idx = threadIdx.x + blockDim.x * blockIdx.x;
+        curand_init(Config::SEED, idx, 0, &state[idx]);
+
+        velocities->velocityX[idx] = curand_uniform(&state[idx]) * (Config::PREDATOR_MAX_SPEED - Config::PREDATOR_MIN_SPEED) + Config::PREDATOR_MIN_SPEED;
+        velocities->velocityY[idx] = curand_uniform(&state[idx]) * (Config::PREDATOR_MAX_SPEED - Config::PREDATOR_MIN_SPEED) + Config::PREDATOR_MIN_SPEED;
+        velocities->velocityZ[idx] = curand_uniform(&state[idx]) * (Config::PREDATOR_MAX_SPEED - Config::PREDATOR_MIN_SPEED) + Config::PREDATOR_MIN_SPEED;
+    }
+
     __global__ void assignFishToRegionsKernel(float* positions, int* fishIds, int* regionIndexes)
     {
         int i = blockIdx.x * blockDim.x + threadIdx.x;
         if (i >= Config::SHOAL_SIZE) return;
         
         int xIndex = i;
-        int yIndex = i + Config::SHOAL_SIZE;
-        int zIndex = i + Config::SHOAL_SIZE * 2;
+        int yIndex = i + Config::FISH_COUNT;
+        int zIndex = i + Config::FISH_COUNT * 2;
 
         float tempX = positions[xIndex] / Config::REGION_SIZE;
         float tempY = positions[yIndex] / Config::REGION_SIZE;
@@ -81,14 +91,14 @@ namespace computation {
 		}
     }
 
-    __global__ void computeMoveKernel(float* positions, FishShoalVelocities* velocities, FishProperties* properties, int* fishIds, int* regionIndexes, int* regionStarts, int* regionsCheatSheet)
+    __global__ void computeShoalMoveKernel(float* positions, FishShoalVelocities* velocities, FishProperties* properties, int* fishIds, int* regionIndexes, int* regionStarts, int* regionsCheatSheet)
     {
         int i = blockIdx.x * blockDim.x + threadIdx.x;
         if (i >= Config::SHOAL_SIZE) return;
 
         int xIndex = i;
-        int yIndex = i + Config::SHOAL_SIZE;
-        int zIndex = i + Config::SHOAL_SIZE * 2;
+        int yIndex = i + Config::FISH_COUNT;
+        int zIndex = i + Config::FISH_COUNT * 2;
 
         float Px = positions[xIndex];
         float Py = positions[yIndex];
@@ -130,8 +140,8 @@ namespace computation {
                 }
 
                 float Qx = positions[fishIndex];
-                float Qy = positions[fishIndex + Config::SHOAL_SIZE];
-                float Qz = positions[fishIndex + Config::SHOAL_SIZE * 2];
+                float Qy = positions[fishIndex + Config::FISH_COUNT];
+                float Qz = positions[fishIndex + Config::FISH_COUNT * 2];
 
                 float distX = Qx - Px;
                 float distY = Qy - Py;
@@ -234,10 +244,42 @@ namespace computation {
         containmentZ -= kF / (dist1Z * dist1Z);
         containmentZ += kF / (dist2Z * dist2Z);
 
+        // Calculate predator avoidance
+        float predatorAvoidanceX = 0.0f;
+        float predatorAvoidanceY = 0.0f;
+        float predatorAvoidanceZ = 0.0f;
+        weightSum = 0.0f;
+
+        for (int predatorIndex = Config::SHOAL_SIZE; predatorIndex < Config::FISH_COUNT; predatorIndex++) {
+            float Qx = positions[predatorIndex];
+			float Qy = positions[predatorIndex + Config::FISH_COUNT];
+			float Qz = positions[predatorIndex + Config::FISH_COUNT * 2];
+
+			float distX = Qx - Px;
+			float distY = Qy - Py;
+			float distZ = Qz - Pz;
+
+			float dist = sqrt(distX * distX + distY * distY + distZ * distZ);
+			if (dist < 0.000001f) dist = 0.000001f;
+			if (dist > properties->predatorViewDistance) continue;
+
+			predatorAvoidanceX += -distX / dist;
+			predatorAvoidanceY += -distY / dist;
+			predatorAvoidanceZ += -distZ / dist;
+            weightSum += 1.0f / dist;
+        }
+
+        float predatorAvoidance = sqrt(predatorAvoidanceX * predatorAvoidanceX + predatorAvoidanceY * predatorAvoidanceY + predatorAvoidanceZ * predatorAvoidanceZ);
+        if (predatorAvoidance > 0.0f) {
+			predatorAvoidanceX = predatorAvoidanceX / weightSum / predatorAvoidance * properties->predatorAvoidanceWeight;
+			predatorAvoidanceY = predatorAvoidanceY / weightSum / predatorAvoidance * properties->predatorAvoidanceWeight;
+			predatorAvoidanceZ = predatorAvoidanceZ / weightSum / predatorAvoidance * properties->predatorAvoidanceWeight;
+		}
+
         // Calculate net force
-        float FSx = alignmentX + cohesionX + separationX + containmentX;
-        float FSy = alignmentY + cohesionY + separationY + containmentY;
-        float FSz = alignmentZ + cohesionZ + separationZ + containmentZ;
+        float FSx = alignmentX + cohesionX + separationX + containmentX + predatorAvoidanceX;
+        float FSy = alignmentY + cohesionY + separationY + containmentY + predatorAvoidanceY;
+        float FSz = alignmentZ + cohesionZ + separationZ + containmentZ + predatorAvoidanceZ;
 
         float force = sqrt(FSx * FSx + FSy * FSy + FSz * FSz);
         if (force != 0.0f) {
@@ -264,23 +306,66 @@ namespace computation {
             Vz = Vz * properties->maxSpeed / speed;
         }
 
-        float newPx = positions[xIndex] + Vx;
+        float newPx = Px + Vx;
         if (Config::AQUARIUM_SIZE / 2 - newPx < 0 || Config::AQUARIUM_SIZE / 2 - newPx > 2) 
         {
 			Vx = 0;
 		}
 
-        float newPy = positions[yIndex] + Vy;
+        float newPy = Py + Vy;
         if (Config::AQUARIUM_SIZE / 2 - newPy < 0 || Config::AQUARIUM_SIZE / 2 - newPy > 2) 
 		{
             Vy = 0;
         }
 
-        float newPz = positions[zIndex] + Vz;
+        float newPz = Pz + Vz;
         if (Config::AQUARIUM_SIZE / 2 - newPz < 0 || Config::AQUARIUM_SIZE / 2 - newPz > 2)
         {
 			Vz = 0;
 		}
+
+        positions[xIndex] += Vx;
+        positions[yIndex] += Vy;
+        positions[zIndex] += Vz;
+
+        velocities->velocityX[i] = Vx;
+        velocities->velocityY[i] = Vy;
+        velocities->velocityZ[i] = Vz;
+    }
+
+    __global__ void computePredatorMoveKernel(float* positions, PredatorVelocities* velocities) {
+        int i = blockIdx.x * blockDim.x + threadIdx.x;
+		if (i >= Config::PREDATOR_COUNT) return;
+
+		int xIndex = i + Config::SHOAL_SIZE;
+		int yIndex = xIndex + Config::FISH_COUNT;
+		int zIndex = yIndex + Config::FISH_COUNT;
+
+		float Px = positions[xIndex];
+		float Py = positions[yIndex];
+		float Pz = positions[zIndex];
+
+		float Vx = velocities->velocityX[i];
+        float Vy = velocities->velocityY[i];
+        float Vz = velocities->velocityZ[i];
+
+        float newPx = Px + Vx;
+        if (Config::AQUARIUM_SIZE / 2 - newPx < 0 || Config::AQUARIUM_SIZE / 2 - newPx > 2)
+        {
+            Vx = -Vx;
+        }
+
+        float newPy = Py + Vy;
+        if (Config::AQUARIUM_SIZE / 2 - newPy < 0 || Config::AQUARIUM_SIZE / 2 - newPy > 2)
+        {
+            Vy = -Vy;
+        }
+
+        float newPz = Pz + Vz;
+        if (Config::AQUARIUM_SIZE / 2 - newPz < 0 || Config::AQUARIUM_SIZE / 2 - newPz > 2)
+        {
+            Vz = -Vz;
+        }
 
         positions[xIndex] += Vx;
         positions[yIndex] += Vy;

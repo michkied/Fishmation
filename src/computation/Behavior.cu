@@ -1,12 +1,13 @@
-﻿#include "computation/Behavior.h"
+﻿#include "Config.hpp"
+#include "computation/Behavior.h"
 #include "computation/Kernels.h"
+
 #include <stdio.h>
 #include <chrono>
 #include <thread>
 #include <cuda_gl_interop.h>
 #include <thrust/sort.h>
 #include <thrust/execution_policy.h>
-#include "Config.hpp"
 
 namespace computation {
 
@@ -44,9 +45,9 @@ namespace computation {
             return;
         }
         FishShoalVelocities velocities;
-        std::fill(velocities.velocityX, velocities.velocityX + Config::SHOAL_SIZE, 0.001f);
-        std::fill(velocities.velocityY, velocities.velocityY + Config::SHOAL_SIZE, 0.001f);
-        std::fill(velocities.velocityZ, velocities.velocityZ + Config::SHOAL_SIZE, 0.001f);
+        std::fill(velocities.velocityX, velocities.velocityX + Config::SHOAL_SIZE, 0.0f);
+        std::fill(velocities.velocityY, velocities.velocityY + Config::SHOAL_SIZE, 0.0f);
+        std::fill(velocities.velocityZ, velocities.velocityZ + Config::SHOAL_SIZE, 0.0f);
         cudaStatus = cudaMemcpy(_velocitiesDevice, &velocities, sizeof(FishShoalVelocities), cudaMemcpyHostToDevice);
         if (cudaStatus != cudaSuccess) {
             fprintf(stderr, "cudaMemcpy failed!");
@@ -76,7 +77,13 @@ namespace computation {
 
         cudaStatus = ComputeRegionsCheatSheet();
         if (cudaStatus != cudaSuccess) {
-            fprintf(stderr, "cudaMalloc failed!");
+            fprintf(stderr, "ComputeRegionsCheatSheet failed!");
+            return;
+        }
+
+        cudaStatus = SetupPredators();
+        if (cudaStatus != cudaSuccess) {
+            fprintf(stderr, "SetupPredators failed!");
             return;
         }
     }
@@ -88,6 +95,8 @@ namespace computation {
 		cudaFree(_regionIndexesDevice);
 		cudaFree(_regionStartsDevice);
 		cudaFree(_regionsCheatSheetDevice);
+        cudaFree(_predatorStateDevice);
+        cudaFree(_predatorVelocitiesDevice);
     }
 
     cudaError_t Behavior::ComputeRegionsCheatSheet()
@@ -101,6 +110,37 @@ namespace computation {
         }
 
         computeRegionsCheatSheetKernel<<< Config::REGION_COUNT / Config::THREADS_PER_BLOCK + 1, Config::THREADS_PER_BLOCK >>>(_regionsCheatSheetDevice);
+
+        cudaStatus = cudaGetLastError();
+        if (cudaStatus != cudaSuccess) {
+            fprintf(stderr, "addKernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
+            return cudaStatus;
+        }
+
+        cudaStatus = cudaDeviceSynchronize();
+        if (cudaStatus != cudaSuccess) {
+            fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching addKernel!\n", cudaStatus);
+            return cudaStatus;
+        }
+
+        return cudaSuccess;
+    }
+
+    cudaError_t Behavior::SetupPredators() {
+        cudaError_t cudaStatus;
+        cudaStatus = cudaMalloc(&_predatorStateDevice, Config::PREDATOR_COUNT * sizeof(curandState));
+        if (cudaStatus != cudaSuccess) {
+            fprintf(stderr, "cudaMalloc failed!");
+            return cudaStatus;
+        }
+
+        cudaStatus = cudaMalloc(&_predatorVelocitiesDevice, sizeof(PredatorVelocities));
+        if (cudaStatus != cudaSuccess) {
+            fprintf(stderr, "cudaMalloc failed!");
+            return cudaStatus;
+        }
+
+        setupPredatorRandomnessKernel << < Config::PREDATOR_COUNT / Config::THREADS_PER_BLOCK + 1, Config::THREADS_PER_BLOCK >> > (_predatorStateDevice, _predatorVelocitiesDevice);
 
         cudaStatus = cudaGetLastError();
         if (cudaStatus != cudaSuccess) {
@@ -140,8 +180,9 @@ namespace computation {
         thrust::sort_by_key(thrust::device, _regionIndexesDevice, _regionIndexesDevice + Config::SHOAL_SIZE, _fishIdsDevice);
         findRegionStartsKernel<<< Config::SHOAL_SIZE / Config::THREADS_PER_BLOCK + 1, Config::THREADS_PER_BLOCK >>>(_fishIdsDevice, _regionIndexesDevice, _regionStartsDevice);
 
-        // Compute movement
-        computeMoveKernel<<< Config::SHOAL_SIZE / Config::THREADS_PER_BLOCK + 1, Config::THREADS_PER_BLOCK >>>((float*)positions_dev, _velocitiesDevice, _propertiesDevice, _fishIdsDevice, _regionIndexesDevice, _regionStartsDevice, _regionsCheatSheetDevice);
+        // Compute shoal movement
+        computeShoalMoveKernel<<< Config::SHOAL_SIZE / Config::THREADS_PER_BLOCK + 1, Config::THREADS_PER_BLOCK >>>((float*)positions_dev, _velocitiesDevice, _propertiesDevice, _fishIdsDevice, _regionIndexesDevice, _regionStartsDevice, _regionsCheatSheetDevice);
+        computePredatorMoveKernel << < Config::PREDATOR_COUNT / Config::THREADS_PER_BLOCK + 1, Config::THREADS_PER_BLOCK >> >((float*)positions_dev, _predatorVelocitiesDevice);
 
         cudaStatus = cudaGetLastError();
         if (cudaStatus != cudaSuccess) {

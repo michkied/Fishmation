@@ -4,7 +4,9 @@
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 #include "types.h"
-#include <mutex>
+
+#include <curand.h>
+#include <curand_kernel.h>
 
 namespace computation
 {
@@ -18,6 +20,7 @@ namespace computation
 
     private:
         cudaError_t ComputeRegionsCheatSheet();
+        cudaError_t SetupPredators();
 
         GLuint _shoalBuffer;
         cudaGraphicsResource* _resource;
@@ -29,5 +32,8 @@ namespace computation
         int* _regionIndexesDevice;
         int* _regionStartsDevice;
         int* _regionsCheatSheetDevice;
+
+        curandState* _predatorStateDevice;
+        PredatorVelocities* _predatorVelocitiesDevice;
     };
 }
