@@ -86,7 +86,7 @@ namespace graphics
             void main()
             {
                 gl_Position = proj * view * model * vec4(posX, posY, posZ, 1.0);
-                gl_PointSize = 5.0;
+                gl_PointSize = 2.0;
             }
         )glsl";
 

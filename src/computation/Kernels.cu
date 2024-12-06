@@ -3,6 +3,44 @@
 #include <cmath>
 
 namespace computation {
+    __global__ void computeRegionsCheatSheetKernel(int* regionsCheatSheet)
+	{
+		int i = blockIdx.x * blockDim.x + threadIdx.x;
+		if (i >= Config::REGION_COUNT) return;
+
+        int dim = Config::REGION_DIM_COUNT;
+		int x = i % dim;
+		int y = (i / dim) % dim;
+		int z = i / (dim * dim);
+
+        int globalIndex = x * dim * dim + y * dim + z;
+        int regionsToCheckIndex = 0;
+
+        for (int i = -1; i <= 1; i++)
+        {
+            for (int j = -1; j <= 1; j++)
+            {
+                for (int k = -1; k <= 1; k++)
+                {
+                    int xIndex = x + i;
+                    int yIndex = y + j;
+                    int zIndex = z + k;
+
+                    if (xIndex >= 0 && xIndex < dim && yIndex >= 0 && yIndex < dim && zIndex >= 0 && zIndex < dim)
+                    {
+                        regionsCheatSheet[globalIndex * 27 + regionsToCheckIndex] = xIndex * dim * dim + yIndex * dim + zIndex;
+                        regionsToCheckIndex++;
+                    }
+                }
+            }
+        }
+
+        for (int i = regionsToCheckIndex; i < 27; i++)
+        {
+            regionsCheatSheet[globalIndex * 27 + i] = -1;
+        }
+	}
+
     __global__ void assignFishToRegionsKernel(float* positions, int* fishIds, int* regionIndexes)
     {
         int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -129,7 +167,6 @@ namespace computation {
                 searchIndex++;
             }
 
-
             regionIterator++;
             if (regionIterator == 27) break;
             regionToCheck = regionsCheatSheet[regionIndex * 27 + regionIterator];
@@ -160,17 +197,17 @@ namespace computation {
         float kF = properties->containmentWeight;
 
         float dist1X = Config::AQUARIUM_SIZE / 2 - Px;
-        float dist2X = -Config::AQUARIUM_SIZE / 2 - Px;
+        float dist2X = Config::AQUARIUM_SIZE / 2 + Px;
         containmentX -= kF / (dist1X * dist1X);
         containmentX += kF / (dist2X * dist2X);
 
         float dist1Y = Config::AQUARIUM_SIZE / 2 - Py;
-        float dist2Y = -Config::AQUARIUM_SIZE / 2 - Py;
+        float dist2Y = Config::AQUARIUM_SIZE / 2 + Py;
         containmentY -= kF / (dist1Y * dist1Y);
         containmentY += kF / (dist2Y * dist2Y);
 
         float dist1Z = Config::AQUARIUM_SIZE / 2 - Pz;
-        float dist2Z = -Config::AQUARIUM_SIZE / 2 - Pz;
+        float dist2Z = Config::AQUARIUM_SIZE / 2 + Pz;
         containmentZ -= kF / (dist1Z * dist1Z);
         containmentZ += kF / (dist2Z * dist2Z);
 
@@ -178,8 +215,6 @@ namespace computation {
         float steeringX = alignmentX + cohesionX + separationX + containmentX;
         float steeringY = alignmentY + cohesionY + separationY + containmentY;
         float steeringZ = alignmentZ + cohesionZ + separationZ + containmentZ;
-
-        __syncthreads();
 
         float steeringStrength = sqrt(steeringX * steeringX + steeringY * steeringY + steeringZ * steeringZ);
         if (steeringStrength != 0.0f) {
@@ -193,13 +228,43 @@ namespace computation {
             float aY = FsY / properties->mass;
             float aZ = FsZ / properties->mass;
 
-            velocities->velocityX[i] = (Vx + aX > properties->maxSpeed) ? properties->maxSpeed : Vx + aX;
-            velocities->velocityY[i] = (Vy + aY > properties->maxSpeed) ? properties->maxSpeed : Vy + aY;
-            velocities->velocityZ[i] = (Vz + aZ > properties->maxSpeed) ? properties->maxSpeed : Vz + aZ;
+            Vx += aX;
+            Vy += aY;
+            Vz += aZ;
 		}
 
-        positions[xIndex] += velocities->velocityX[i];
-        positions[yIndex] += velocities->velocityY[i];
-        positions[zIndex] += velocities->velocityZ[i];
+        // Limit speed
+        float speed = sqrt(Vx * Vx + Vy * Vy + Vz * Vz);
+        if (speed > properties->maxSpeed) {
+            Vx = Vx * properties->maxSpeed / speed;
+            Vy = Vy * properties->maxSpeed / speed;
+            Vz = Vz * properties->maxSpeed / speed;
+        }
+
+        float newPx = positions[xIndex] + Vx;
+        if (Config::AQUARIUM_SIZE / 2 - newPx < 0 || Config::AQUARIUM_SIZE / 2 - newPx > 2) 
+        {
+			Vx = 0;
+		}
+
+        float newPy = positions[yIndex] + Vy;
+        if (Config::AQUARIUM_SIZE / 2 - newPy < 0 || Config::AQUARIUM_SIZE / 2 - newPy > 2) 
+		{
+            Vy = 0;
+        }
+
+        float newPz = positions[zIndex] + Vz;
+        if (Config::AQUARIUM_SIZE / 2 - newPz < 0 || Config::AQUARIUM_SIZE / 2 - newPz > 2)
+        {
+			Vz = 0;
+		}
+
+        positions[xIndex] += Vx;
+        positions[yIndex] += Vy;
+        positions[zIndex] += Vz;
+
+        velocities->velocityX[i] = Vx;
+        velocities->velocityY[i] = Vy;
+        velocities->velocityZ[i] = Vz;
     }
 }

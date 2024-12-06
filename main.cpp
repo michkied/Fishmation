@@ -6,6 +6,7 @@
 #include <thread>
 #include <mutex>
 #include <chrono>
+#include <random>
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
 
@@ -31,11 +32,17 @@ int main()
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_MULTISAMPLE);
 
-    float shoalData[Config::SHOAL_SIZE * 3] = {
-            -0.9f, -0.91f, 0.0f, -0.5f, // x
-            -0.9f, -0.8f,  0.0f, 0.5f, // y
-            -0.9f, -0.5f,  0.0f, 0.5f  // z
-    };
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::normal_distribution<float> distribution(0.0f, 1.0f);
+
+    float* shoalData = new float[Config::SHOAL_SIZE * 3];
+    for (int i = 0; i < Config::SHOAL_SIZE * 3; i++) {
+        float random_number;
+        do { random_number = distribution(gen); } 
+        while (random_number < -0.9f || random_number > 0.9f);
+		shoalData[i] = random_number;
+	}
 
     glm::mat4 view = glm::lookAt(
         glm::vec3(3.0f, 0.0f, 0.5f),
@@ -46,14 +53,14 @@ int main()
 
     computation::FishProperties properties;
     properties.mass = 1.0f;
-    properties.maxForce = 0.00005f;
+    properties.maxForce = 0.0005f;
     properties.maxSpeed = 0.001f;
     properties.fieldOfViewCos = std::cos(180.0f / 2 * 3.14159 / 180);
-    properties.viewDistance = 0.3f;
-    properties.containmentWeight = 1.0f / 1000000.0f;
-    properties.alignmentWeight = 0.001f;
-    properties.cohesionWeight = 0.001f;
-    properties.separationWeight = 0.001f;
+    properties.viewDistance = 0.05f;
+    properties.containmentWeight = 1.0f / 100000.0f;
+    properties.alignmentWeight = 0.0001f;
+    properties.cohesionWeight = 0.0001f;
+    properties.separationWeight = 0.000001f;
    
 
     graphics::Aquarium aquarium = graphics::Aquarium(view, proj);
