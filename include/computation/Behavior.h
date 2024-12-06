@@ -13,27 +13,27 @@ namespace computation
     class Behavior
     {
     public:
-        Behavior(GLuint shoalBuffer, FishProperties properties);
+        Behavior(GLuint shoalBuffer, FishProperties& properties);
 		~Behavior();
 
         cudaError_t ComputeMove();
 
     private:
         cudaError_t ComputeRegionsCheatSheet();
-        cudaError_t SetupPredators();
+
+        FishProperties& _propertiesHost;
+        int _propertiesChangeCounter = _propertiesHost.changeCounter;
 
         GLuint _shoalBuffer;
         cudaGraphicsResource* _resource;
 
         FishProperties* _propertiesDevice;
         FishShoalVelocities* _velocitiesDevice;
+        PredatorVelocities* _predatorVelocitiesDevice;
 
         int* _fishIdsDevice;
         int* _regionIndexesDevice;
         int* _regionStartsDevice;
         int* _regionsCheatSheetDevice;
-
-        curandState* _predatorStateDevice;
-        PredatorVelocities* _predatorVelocitiesDevice;
     };
 }

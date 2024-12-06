@@ -21,7 +21,6 @@ namespace graphics
 	private:
 		void CompileShaders();
 		void CompileVertexShader();
-		void CompileGeometryShader();
 		void CompileFragmentShader();
 
 		float* _shoalData;
@@ -30,7 +29,6 @@ namespace graphics
 		GLuint _vao;
 		GLuint _vbo;
 		GLuint _vertexShader;
-		GLuint _geometryShader;
 		GLuint _fragmentShader;
 
 		GLint _uniColor;

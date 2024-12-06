@@ -44,7 +44,6 @@ namespace graphics
     Shoal::~Shoal() {
         glDeleteProgram(_shaderProgram);
         glDeleteShader(_fragmentShader);
-        //glDeleteShader(_geometryShader);
         glDeleteShader(_vertexShader);
 
         glDeleteBuffers(1, &_vbo);
@@ -57,12 +56,10 @@ namespace graphics
 
     void Shoal::CompileShaders() {
         CompileVertexShader();
-        //CompileGeometryShader();
         CompileFragmentShader();
 
         _shaderProgram = glCreateProgram();
         glAttachShader(_shaderProgram, _vertexShader);
-        //glAttachShader(_shaderProgram, _geometryShader);
         glAttachShader(_shaderProgram, _fragmentShader);
         glBindFragDataLocation(_shaderProgram, 0, "outColor");
 
@@ -107,42 +104,6 @@ namespace graphics
         }
     }
 
-    void Shoal::CompileGeometryShader() {
-        const char* geometrySource = R"glsl(
-            #version 150 core
-
-            layout(points) in;
-            layout(line_strip, max_vertices = 2) out;
-
-            void main()
-            {
-                gl_Position = gl_in[0].gl_Position + vec4(-0.1, 0.0, 0.0, 0.0);
-                EmitVertex();
-
-                gl_Position = gl_in[0].gl_Position + vec4(0.1, 0.0, 0.0, 0.0);
-                EmitVertex();
-
-                EndPrimitive();
-            }
-        )glsl";
-
-        _geometryShader = glCreateShader(GL_GEOMETRY_SHADER);
-        glShaderSource(_geometryShader, 1, &geometrySource, NULL);
-        glCompileShader(_geometryShader);
-
-        GLint status;
-        glGetShaderiv(_geometryShader, GL_COMPILE_STATUS, &status);
-        if (status != GL_TRUE)
-        {
-            GLint length;
-            glGetShaderiv(_geometryShader, GL_INFO_LOG_LENGTH, &length);
-            std::vector<char> log(length);
-            glGetShaderInfoLog(_geometryShader, length, &length, log.data());
-            std::cerr << "Geometry shader compilation failed: " << log.data() << std::endl;
-            exit(1);
-        }
-    }
-
     void Shoal::CompileFragmentShader() {
         const char* fragmentSource = R"glsl(
 			#version 150 core
@@ -178,9 +139,6 @@ namespace graphics
     {
         glBindVertexArray(_vao);
         glUseProgram(_shaderProgram);
-        //glBindBuffer(GL_ARRAY_BUFFER, _vbo);
-
-        //glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * Config::SHOAL_SIZE * 3, _shoalData);
 
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::rotate(

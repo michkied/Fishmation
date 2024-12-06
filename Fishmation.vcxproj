@@ -97,6 +97,14 @@
     <ClCompile Include="src\graphics\Aquarium.cpp" />
     <ClCompile Include="src\glad.c" />
     <ClCompile Include="src\graphics\Shoal.cpp" />
+    <ClCompile Include="src\graphics\UI.cpp" />
+    <ClCompile Include="src\ui\imgui.cpp" />
+    <ClCompile Include="src\ui\imgui_demo.cpp" />
+    <ClCompile Include="src\ui\imgui_draw.cpp" />
+    <ClCompile Include="src\ui\imgui_impl_glfw.cpp" />
+    <ClCompile Include="src\ui\imgui_impl_opengl3.cpp" />
+    <ClCompile Include="src\ui\imgui_tables.cpp" />
+    <ClCompile Include="src\ui\imgui_widgets.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\computation\Behavior.h" />
@@ -105,6 +113,7 @@
     <ClInclude Include="include\graphics\Aquarium.hpp" />
     <ClInclude Include="include\Config.hpp" />
     <ClInclude Include="include\graphics\Shoal.hpp" />
+    <ClInclude Include="include\graphics\UI.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

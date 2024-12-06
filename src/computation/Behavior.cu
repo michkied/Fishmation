@@ -4,14 +4,14 @@
 
 #include <stdio.h>
 #include <chrono>
-#include <thread>
+#include <random>
 #include <cuda_gl_interop.h>
 #include <thrust/sort.h>
 #include <thrust/execution_policy.h>
 
 namespace computation {
 
-    Behavior::Behavior(GLuint shoalBuffer, FishProperties properties) : _shoalBuffer(shoalBuffer) { //TODO FREE
+    Behavior::Behavior(GLuint shoalBuffer, FishProperties& properties) : _shoalBuffer(shoalBuffer), _propertiesHost(properties) { //TODO FREE
         cudaError_t cudaStatus;
 
         cudaStatus = cudaSetDevice(0);
@@ -81,11 +81,25 @@ namespace computation {
             return;
         }
 
-        cudaStatus = SetupPredators();
+        cudaStatus = cudaMalloc(&_predatorVelocitiesDevice, sizeof(PredatorVelocities));
         if (cudaStatus != cudaSuccess) {
-            fprintf(stderr, "SetupPredators failed!");
+            fprintf(stderr, "cudaMalloc failed!");
             return;
         }
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_real_distribution<float> distribution(Config::PREDATOR_MIN_SPEED, Config::PREDATOR_MAX_SPEED);
+        PredatorVelocities predatorVelocities;
+        for (int i = 0; i < Config::PREDATOR_COUNT; i++) {
+			predatorVelocities.velocityX[i] = distribution(gen);
+			predatorVelocities.velocityY[i] = distribution(gen);
+			predatorVelocities.velocityZ[i] = distribution(gen);
+		}
+        cudaStatus = cudaMemcpy(_predatorVelocitiesDevice, &predatorVelocities, sizeof(PredatorVelocities), cudaMemcpyHostToDevice);
+		if (cudaStatus != cudaSuccess) {
+			fprintf(stderr, "cudaMemcpy failed!");
+			return;
+		}
     }
 
     Behavior::~Behavior() {
@@ -95,7 +109,6 @@ namespace computation {
 		cudaFree(_regionIndexesDevice);
 		cudaFree(_regionStartsDevice);
 		cudaFree(_regionsCheatSheetDevice);
-        cudaFree(_predatorStateDevice);
         cudaFree(_predatorVelocitiesDevice);
     }
 
@@ -126,40 +139,18 @@ namespace computation {
         return cudaSuccess;
     }
 
-    cudaError_t Behavior::SetupPredators() {
-        cudaError_t cudaStatus;
-        cudaStatus = cudaMalloc(&_predatorStateDevice, Config::PREDATOR_COUNT * sizeof(curandState));
-        if (cudaStatus != cudaSuccess) {
-            fprintf(stderr, "cudaMalloc failed!");
-            return cudaStatus;
-        }
-
-        cudaStatus = cudaMalloc(&_predatorVelocitiesDevice, sizeof(PredatorVelocities));
-        if (cudaStatus != cudaSuccess) {
-            fprintf(stderr, "cudaMalloc failed!");
-            return cudaStatus;
-        }
-
-        setupPredatorRandomnessKernel << < Config::PREDATOR_COUNT / Config::THREADS_PER_BLOCK + 1, Config::THREADS_PER_BLOCK >> > (_predatorStateDevice, _predatorVelocitiesDevice);
-
-        cudaStatus = cudaGetLastError();
-        if (cudaStatus != cudaSuccess) {
-            fprintf(stderr, "addKernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
-            return cudaStatus;
-        }
-
-        cudaStatus = cudaDeviceSynchronize();
-        if (cudaStatus != cudaSuccess) {
-            fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching addKernel!\n", cudaStatus);
-            return cudaStatus;
-        }
-
-        return cudaSuccess;
-    }
-
     cudaError_t Behavior::ComputeMove()
     {
         cudaError_t cudaStatus;
+
+        if (_propertiesHost.changeCounter != _propertiesChangeCounter) {
+            cudaStatus = cudaMemcpy(_propertiesDevice, &_propertiesHost, sizeof(FishProperties), cudaMemcpyHostToDevice);
+            if (cudaStatus != cudaSuccess) {
+                fprintf(stderr, "cudaMemcpy failed!");
+                return cudaStatus;
+            }
+            _propertiesChangeCounter = _propertiesHost.changeCounter;
+        }
 
         cudaStatus = cudaGraphicsMapResources(1, &_resource, 0);
         if (cudaStatus != cudaSuccess) {
@@ -195,49 +186,6 @@ namespace computation {
             fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching addKernel!\n", cudaStatus);
             return cudaStatus;
         }
-
-        //float output4[Config::SHOAL_SIZE * 3];
-        //cudaStatus = cudaMemcpy(output4, positions_dev, size, cudaMemcpyDeviceToHost);
-        //if (cudaStatus != cudaSuccess) {
-        //    fprintf(stderr, "cudaMemcpy failed!");
-        //    return cudaStatus;
-        //}
-
-        //// for debugging
-        //int output[Config::SHOAL_SIZE * 2];
-        //cudaStatus = cudaMemcpy(output, _regionIndexesDevice, Config::SHOAL_SIZE * sizeof(int) * 2, cudaMemcpyDeviceToHost);
-        //if (cudaStatus != cudaSuccess) {
-        //    fprintf(stderr, "cudaMemcpy failed!");
-        //    return cudaStatus;
-        //}
-        //// for debugging
-        //int output2[Config::SHOAL_SIZE];
-        //cudaStatus = cudaMemcpy(output2, _fishIdsDevice, Config::SHOAL_SIZE * sizeof(int), cudaMemcpyDeviceToHost);
-        //if (cudaStatus != cudaSuccess) {
-        //    fprintf(stderr, "cudaMemcpy failed!");
-        //    return cudaStatus;
-        //}
-        //// for debugging
-        //int output3[Config::REGION_COUNT];
-        //cudaStatus = cudaMemcpy(output3, _regionStartsDevice, Config::REGION_COUNT * sizeof(int), cudaMemcpyDeviceToHost);
-        //if (cudaStatus != cudaSuccess) {
-        //    fprintf(stderr, "cudaMemcpy failed!");
-        //    return cudaStatus;
-        //}
-        //// for debugging
-        //int output5[Config::REGION_COUNT * 27];
-        //cudaStatus = cudaMemcpy(output5, _regionsCheatSheetDevice, Config::REGION_COUNT * 27 * sizeof(int), cudaMemcpyDeviceToHost);
-        //if (cudaStatus != cudaSuccess) {
-        //    fprintf(stderr, "cudaMemcpy failed!");
-        //    return cudaStatus;
-        //}
-
-        //FishShoalVelocities velocities;
-        //cudaStatus = cudaMemcpy(&velocities, _velocitiesDevice, sizeof(velocities), cudaMemcpyDeviceToHost);
-        //if (cudaStatus != cudaSuccess) {
-        //    fprintf(stderr, "cudaMemcpy failed!");
-        //    return cudaStatus;
-        //}
 
         cudaStatus = cudaGraphicsUnmapResources(1, &_resource, 0);
         if (cudaStatus != cudaSuccess) {

@@ -16,6 +16,8 @@ namespace computation {
         float cohesionWeight;
         float separationWeight;
         float predatorAvoidanceWeight;
+
+        int changeCounter = 0;
     };
 
     struct FishShoalVelocities

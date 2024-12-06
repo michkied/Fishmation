@@ -3,7 +3,7 @@
 namespace Config {
 	constexpr int WIDTH = 1920;
 	constexpr int HEIGHT = 1080;
-	constexpr int SHOAL_SIZE = 20000;
+	constexpr int SHOAL_SIZE = 10000;
 	constexpr int PREDATOR_COUNT = 5;
 	constexpr float AQUARIUM_SIZE = 2.0f;
 	constexpr float REGION_SIZE = 0.05f;
@@ -12,10 +12,9 @@ namespace Config {
 	constexpr float PREDATOR_POINT_SIZE = 5.0f;
 
 	constexpr int THREADS_PER_BLOCK = 256;
-	constexpr uint64_t SEED = 1234;
 
 	constexpr float PREDATOR_MAX_SPEED = 0.001f;
-	constexpr float PREDATOR_MIN_SPEED = 0.0005f;
+	constexpr float PREDATOR_MIN_SPEED = 0.0007f;
 
 	constexpr int FISH_COUNT = SHOAL_SIZE + PREDATOR_COUNT;
 	constexpr int REGION_DIM_COUNT = (int)(AQUARIUM_SIZE / REGION_SIZE);

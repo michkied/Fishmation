@@ -10,34 +10,16 @@
 #include <sstream>
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
+#include "ui/imgui.h"
+#include "ui/imgui_impl_glfw.h"
+#include "ui/imgui_impl_opengl3.h"
 
+#include "graphics/UI.hpp"
 #include "graphics/Aquarium.hpp"
 #include "graphics/Shoal.hpp"
 #include "Config.hpp"
 #include "computation/Behavior.h"
 #include "computation/types.h"
-
-void update_fps_counter(GLFWwindow* window) {
-    static double previous_seconds = glfwGetTime();
-    static int frame_count = 0;
-
-    double current_seconds = glfwGetTime();
-    double elapsed_seconds = current_seconds - previous_seconds;
-
-    if (elapsed_seconds > 1.0) {
-        previous_seconds = current_seconds;
-        double fps = (double)frame_count / elapsed_seconds;
-
-        std::ostringstream oss;
-        oss.precision(2);
-        oss << std::fixed << "Fishmation - FPS: " << fps;
-        glfwSetWindowTitle(window, oss.str().c_str());
-
-        frame_count = 0;
-    }
-
-    frame_count++;
-}
 
 int main()
 {
@@ -51,6 +33,7 @@ int main()
     GLFWwindow* window = glfwCreateWindow(Config::WIDTH, Config::HEIGHT, "GLFW OpenGL", NULL, NULL);
     glfwMakeContextCurrent(window);
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+    glfwSetWindowTitle(window, "Fishmation - Loading...");
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_MULTISAMPLE);
@@ -88,12 +71,14 @@ int main()
     properties.separationWeight = 0.005f;
     properties.predatorAvoidanceWeight = 5.0f;
 
+    graphics::UI ui = graphics::UI(window, properties);
     graphics::Aquarium aquarium = graphics::Aquarium(view, proj);
     graphics::Shoal shoal = graphics::Shoal(view, proj, shoalData);
     computation::Behavior behavior = computation::Behavior(shoal.GetShoalBuffer(), properties);
 
     cudaError_t cudaStatus;
     auto t_start = std::chrono::high_resolution_clock::now();
+    float slider_value = 0.5f;
     while (!glfwWindowShouldClose(window)) {
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -103,6 +88,7 @@ int main()
 
         aquarium.Draw(time);
         shoal.Draw(time);
+        ui.Draw();
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -112,8 +98,6 @@ int main()
             fprintf(stderr, "ComputeMove failed!");
             return 1;
         }
-
-        update_fps_counter(window);
     }
 
     cudaStatus = cudaDeviceReset();

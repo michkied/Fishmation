@@ -41,16 +41,6 @@ namespace computation {
         }
 	}
 
-    __global__ void setupPredatorRandomnessKernel(curandState* state, PredatorVelocities* velocities)
-    {
-        int idx = threadIdx.x + blockDim.x * blockIdx.x;
-        curand_init(Config::SEED, idx, 0, &state[idx]);
-
-        velocities->velocityX[idx] = curand_uniform(&state[idx]) * (Config::PREDATOR_MAX_SPEED - Config::PREDATOR_MIN_SPEED) + Config::PREDATOR_MIN_SPEED;
-        velocities->velocityY[idx] = curand_uniform(&state[idx]) * (Config::PREDATOR_MAX_SPEED - Config::PREDATOR_MIN_SPEED) + Config::PREDATOR_MIN_SPEED;
-        velocities->velocityZ[idx] = curand_uniform(&state[idx]) * (Config::PREDATOR_MAX_SPEED - Config::PREDATOR_MIN_SPEED) + Config::PREDATOR_MIN_SPEED;
-    }
-
     __global__ void assignFishToRegionsKernel(float* positions, int* fishIds, int* regionIndexes)
     {
         int i = blockIdx.x * blockDim.x + threadIdx.x;
