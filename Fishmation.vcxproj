@@ -94,6 +94,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="src\Config.cpp" />
     <ClCompile Include="src\graphics\Aquarium.cpp" />
     <ClCompile Include="src\glad.c" />
     <ClCompile Include="src\graphics\Shoal.cpp" />

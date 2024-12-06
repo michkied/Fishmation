@@ -6,14 +6,18 @@
 
 #include "computation/types.h"
 
-namespace graphics {
-	class UI {
+namespace graphics
+{
+	class UI
+	{
 	public:
-		UI(GLFWwindow* window, computation::FishProperties& fishProperties);
+		UI(GLFWwindow* window, computation::FishProperties& fishProperties, Config& config);
 		~UI();
 
 		void Draw();
 	private:
 		computation::FishProperties& _fishProperties;
+		Config& _config;
+		bool _displayPopup;
 	};
 }

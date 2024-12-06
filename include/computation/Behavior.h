@@ -1,8 +1,8 @@
 #pragma once
 
-#include "glad/glad.h"
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
+#include "glad/glad.h"
 #include "types.h"
 
 #include <curand.h>
@@ -10,30 +10,32 @@
 
 namespace computation
 {
-    class Behavior
-    {
-    public:
-        Behavior(GLuint shoalBuffer, FishProperties& properties);
+	class Behavior
+	{
+	public:
+		Behavior(Config& config, GLuint shoalBuffer, FishProperties& properties);
 		~Behavior();
 
-        cudaError_t ComputeMove();
+		cudaError_t ComputeMove();
 
-    private:
-        cudaError_t ComputeRegionsCheatSheet();
+	private:
+		cudaError_t ComputeRegionsCheatSheet();
 
-        FishProperties& _propertiesHost;
-        int _propertiesChangeCounter = _propertiesHost.changeCounter;
+		Config& _config;
+		Config* _configDevice;
 
-        GLuint _shoalBuffer;
-        cudaGraphicsResource* _resource;
+		FishProperties& _propertiesHost;
+		FishProperties* _propertiesDevice;
+		int _propertiesChangeCounter = _propertiesHost.changeCounter;
 
-        FishProperties* _propertiesDevice;
-        FishShoalVelocities* _velocitiesDevice;
-        PredatorVelocities* _predatorVelocitiesDevice;
+		GLuint _shoalBuffer;
+		cudaGraphicsResource* _resource;
 
-        int* _fishIdsDevice;
-        int* _regionIndexesDevice;
-        int* _regionStartsDevice;
-        int* _regionsCheatSheetDevice;
-    };
+		float* _velocitiesDevice;
+
+		int* _fishIdsDevice;
+		int* _regionIndexesDevice;
+		int* _regionStartsDevice;
+		int* _regionsCheatSheetDevice;
+	};
 }

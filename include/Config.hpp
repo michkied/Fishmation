@@ -1,27 +1,35 @@
 #pragma once
 
-namespace Config {
-	constexpr int WIDTH = 1920;
-	constexpr int HEIGHT = 1080;
-	constexpr int SHOAL_SIZE = 10000;
-	constexpr int PREDATOR_COUNT = 5;
-	constexpr float AQUARIUM_SIZE = 2.0f;
-	constexpr float REGION_SIZE = 0.01f;
+class Config
+{
+public:
+	Config();
 
-	constexpr float FISH_POINT_SIZE = 2.0f;
-	constexpr float PREDATOR_POINT_SIZE = 5.0f;
+	bool loadConfigSuccess = false;
 
-	constexpr int THREADS_PER_BLOCK = 256;
+	bool FULLSCREEN = false;
+	int WIDTH = 1920;
+	int HEIGHT = 1080;
 
-	constexpr float PREDATOR_MAX_SPEED = 0.001f;
-	constexpr float PREDATOR_MIN_SPEED = 0.0007f;
+	int SHOAL_SIZE = 10000;
+	float FISH_POINT_SIZE = 2.0f;
 
-	constexpr float CONTAINMENT_SCALE = 1.0f / 30000000;
-	constexpr float ALIGNMENT_SCALE = 1.0f;
-	constexpr float COHESION_SCALE = 1.0f / 2;
-	constexpr float SEPARATION_SCALE = 1.0f;
+	int PREDATOR_COUNT = 5;
+	float PREDATOR_POINT_SIZE = 5.0f;
+	float PREDATOR_MAX_SPEED = 0.001f;
+	float PREDATOR_MIN_SPEED = 0.0007f;
 
-	constexpr int FISH_COUNT = SHOAL_SIZE + PREDATOR_COUNT;
-	constexpr int REGION_DIM_COUNT = (int)(AQUARIUM_SIZE / REGION_SIZE);
-	constexpr int REGION_COUNT = REGION_DIM_COUNT * REGION_DIM_COUNT * REGION_DIM_COUNT;
-}
+	float AQUARIUM_SIZE = 2.0f;
+	float REGION_SIZE = 0.01f;
+
+	int THREADS_PER_BLOCK = 256;
+
+	float CONTAINMENT_SCALE = 1.0f / 30000000;
+	float ALIGNMENT_SCALE = 1.0f;
+	float COHESION_SCALE = 1.0f / 2;
+	float SEPARATION_SCALE = 1.0f;
+
+	int FISH_COUNT = SHOAL_SIZE + PREDATOR_COUNT;
+	int REGION_DIM_COUNT = (int)(AQUARIUM_SIZE / REGION_SIZE);
+	int REGION_COUNT = REGION_DIM_COUNT * REGION_DIM_COUNT * REGION_DIM_COUNT;
+};

@@ -7,12 +7,14 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "Config.hpp"
+
 namespace graphics
 {
 	class Shoal
 	{
 	public:
-		Shoal(glm::mat4 view, glm::mat4 proj, float* shoalData);
+		Shoal(Config& config, glm::mat4 view, glm::mat4 proj, float* shoalData);
 		~Shoal();
 
 		GLuint GetShoalBuffer();
@@ -22,6 +24,8 @@ namespace graphics
 		void CompileShaders();
 		void CompileVertexShader();
 		void CompileFragmentShader();
+
+		Config& _config;
 
 		float* _shoalData;
 
