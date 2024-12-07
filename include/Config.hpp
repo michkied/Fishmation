@@ -19,8 +19,7 @@ public:
 	float PREDATOR_MAX_SPEED = 0.001f;
 	float PREDATOR_MIN_SPEED = 0.0007f;
 
-	float AQUARIUM_SIZE = 2.0f;
-	float REGION_SIZE = 0.01f;
+	float REGION_SIZE = 0.01f; // should divide the aquarium evenly
 
 	int THREADS_PER_BLOCK = 256;
 
@@ -29,6 +28,8 @@ public:
 	float COHESION_SCALE = 1.0f / 2;
 	float SEPARATION_SCALE = 1.0f;
 
+	// Do not change
+	const float AQUARIUM_SIZE = 2.0f;
 	int FISH_COUNT = SHOAL_SIZE + PREDATOR_COUNT;
 	int REGION_DIM_COUNT = (int)(AQUARIUM_SIZE / REGION_SIZE);
 	int REGION_COUNT = REGION_DIM_COUNT * REGION_DIM_COUNT * REGION_DIM_COUNT;

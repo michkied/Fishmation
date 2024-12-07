@@ -26,7 +26,6 @@ Config::Config()
 		else if (key == "PREDATOR_POINT_SIZE") PREDATOR_POINT_SIZE = std::stof(value);
 		else if (key == "PREDATOR_MAX_SPEED") PREDATOR_MAX_SPEED = std::stof(value);
 		else if (key == "PREDATOR_MIN_SPEED") PREDATOR_MIN_SPEED = std::stof(value);
-		else if (key == "AQUARIUM_SIZE") AQUARIUM_SIZE = std::stof(value);
 		else if (key == "REGION_SIZE") REGION_SIZE = std::stof(value);
 		else if (key == "THREADS_PER_BLOCK") THREADS_PER_BLOCK = std::stoi(value);
 		else if (key == "CONTAINMENT_SCALE") CONTAINMENT_SCALE = std::stof(value);
